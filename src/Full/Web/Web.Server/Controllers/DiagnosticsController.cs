@@ -10,11 +10,16 @@ namespace Web.Server.Controllers;
 public class DiagnosticsController : ControllerBase
 {
     private readonly GraphService _graphService;
+    private readonly BatchQueueService _queueService;
     private readonly ILogger<DiagnosticsController> _logger;
 
-    public DiagnosticsController(GraphService graphService, ILogger<DiagnosticsController> logger)
+    public DiagnosticsController(
+        GraphService graphService, 
+        BatchQueueService queueService,
+        ILogger<DiagnosticsController> logger)
     {
         _graphService = graphService;
+        _queueService = queueService;
         _logger = logger;
     }
 
@@ -43,6 +48,34 @@ public class DiagnosticsController : ControllerBase
                 success = false,
                 message = ex.Message,
                 details = ex.InnerException?.Message,
+                timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
+    // GET: api/Diagnostics/QueueStatus
+    [HttpGet(nameof(QueueStatus))]
+    public async Task<IActionResult> QueueStatus()
+    {
+        _logger.LogInformation("Checking queue status");
+        
+        try
+        {
+            var queueLength = await _queueService.GetQueueLengthAsync();
+            return Ok(new
+            {
+                success = true,
+                queueLength = queueLength,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking queue status");
+            return Ok(new
+            {
+                success = false,
+                message = ex.Message,
                 timestamp = DateTime.UtcNow
             });
         }

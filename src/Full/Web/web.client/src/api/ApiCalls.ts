@@ -1,4 +1,4 @@
-import { ServiceConfiguration, MessageTemplateDto, MessageLogDto, CreateTemplateRequest, UpdateTemplateRequest, MessageBatchDto, CreateBatchAndSendRequest, UpdateLogStatusRequest, ParseFileResponse, MessageStatusStatsDto, UserCoverageStatsDto } from "../apimodels/Models";
+import { ServiceConfiguration, MessageTemplateDto, MessageLogDto, CreateTemplateRequest, UpdateTemplateRequest, MessageBatchDto, CreateBatchAndSendRequest, UpdateLogStatusRequest, ParseFileResponse, MessageStatusStatsDto, UserCoverageStatsDto, QueueStatusDto } from "../apimodels/Models";
 import { BaseAxiosApiLoader } from "./AxiosApiLoader";
 
 
@@ -74,5 +74,10 @@ export const getMessageStatusStats = async (loader: BaseAxiosApiLoader): Promise
 
 export const getUserCoverageStats = async (loader: BaseAxiosApiLoader): Promise<UserCoverageStatsDto> => {
   return loader.loadFromApi('api/Statistics/GetUserCoverageStats', 'GET');
+}
+
+// Diagnostics API calls
+export const getQueueStatus = async (loader: BaseAxiosApiLoader): Promise<QueueStatusDto> => {
+  return loader.loadFromApi('api/Diagnostics/QueueStatus', 'GET');
 }
 

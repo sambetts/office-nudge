@@ -16,12 +16,14 @@ import {
     TableCellLayout,
     Badge,
     ProgressBar,
+    InfoLabel,
 } from '@fluentui/react-components';
 import {
     ArrowLeft20Regular,
     Checkmark20Regular,
     Dismiss20Regular,
     Clock20Regular,
+    Queue20Regular,
 } from '@fluentui/react-icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { BaseAxiosApiLoader } from '../../api/AxiosApiLoader';
@@ -29,8 +31,9 @@ import {
     getBatch,
     getMessageLogsByBatch,
     getTemplate,
+    getQueueStatus,
 } from '../../api/ApiCalls';
-import { MessageBatchDto, MessageLogDto, MessageTemplateDto } from '../../apimodels/Models';
+import { MessageBatchDto, MessageLogDto, MessageTemplateDto, QueueStatusDto } from '../../apimodels/Models';
 
 const useStyles = makeStyles({
     container: {
@@ -83,6 +86,19 @@ const useStyles = makeStyles({
         flexDirection: 'column',
         gap: tokens.spacingVerticalS,
     },
+    queueStatus: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalS,
+        padding: tokens.spacingVerticalM,
+        backgroundColor: tokens.colorNeutralBackground3,
+        borderRadius: tokens.borderRadiusMedium,
+        marginTop: tokens.spacingVerticalM,
+    },
+    queueIcon: {
+        fontSize: '24px',
+        color: tokens.colorBrandForeground1,
+    },
 });
 
 interface BatchProgressPageProps {
@@ -101,6 +117,7 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
     const [batch, setBatch] = useState<MessageBatchDto | null>(null);
     const [template, setTemplate] = useState<MessageTemplateDto | null>(null);
     const [logs, setLogs] = useState<MessageLogDto[]>([]);
+    const [queueStatus, setQueueStatus] = useState<QueueStatusDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [autoRefresh, setAutoRefresh] = useState(true);
@@ -130,13 +147,15 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
             }
             setError(null);
 
-            const [batchData, logsData] = await Promise.all([
+            const [batchData, logsData, queueStatusData] = await Promise.all([
                 getBatch(loader, batchId),
                 getMessageLogsByBatch(loader, batchId),
+                getQueueStatus(loader),
             ]);
 
             setBatch(batchData);
             setLogs(logsData);
+            setQueueStatus(queueStatusData);
 
             // Load template info
             if (batchData.templateId) {
@@ -146,9 +165,9 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
 
             // Stop auto-refresh if all messages are in a final state
             const allFinal = logsData.every(
-                log => log.status === 'Sent' || log.status === 'Failed'
+                log => log.status === 'Success' || log.status === 'Failed'
             );
-            if (allFinal) {
+            if (allFinal && queueStatusData.queueLength === 0) {
                 setAutoRefresh(false);
             }
         } catch (err: any) {
@@ -164,10 +183,11 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
 
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
+            case 'success':
             case 'sent':
                 return (
                     <Badge appearance="filled" color="success" className={styles.statusBadge}>
-                        <Checkmark20Regular /> Sent
+                        <Checkmark20Regular /> Success
                     </Badge>
                 );
             case 'failed':
@@ -221,9 +241,9 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
         );
     }
 
-    const sentCount = logs.filter(log => log.status === 'Sent').length;
-    const failedCount = logs.filter(log => log.status === 'Failed').length;
-    const pendingCount = logs.filter(log => log.status === 'Pending').length;
+    const sentCount = logs.filter(log => log.status.toLowerCase() === 'success' || log.status.toLowerCase() === 'sent').length;
+    const failedCount = logs.filter(log => log.status.toLowerCase() === 'failed').length;
+    const pendingCount = logs.filter(log => log.status.toLowerCase() === 'pending').length;
     const totalCount = logs.length;
     const progressPercent = totalCount > 0 ? ((sentCount + failedCount) / totalCount) * 100 : 0;
 
@@ -261,6 +281,19 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
                         <strong>Created:</strong> {new Date(batch.createdDate).toLocaleString()}
                     </Text>
                 </div>
+
+                {queueStatus && queueStatus.queueLength > 0 && (
+                    <div className={styles.queueStatus}>
+                        <Queue20Regular className={styles.queueIcon} />
+                        <div>
+                            <Text weight="semibold" size={300}>
+                                {queueStatus.queueLength} message{queueStatus.queueLength !== 1 ? 's' : ''} in queue
+                            </Text>
+                            <br />
+                            <Text size={200}>Waiting to be processed by background service</Text>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             <Card className={styles.card}>
@@ -272,7 +305,7 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
                         <div className={styles.summaryNumber}>{totalCount}</div>
                     </div>
                     <div className={styles.summaryItem}>
-                        <Text size={300}>Sent</Text>
+                        <Text size={300}>Success</Text>
                         <div className={styles.summaryNumber} style={{ color: tokens.colorPaletteGreenForeground1 }}>
                             {sentCount}
                         </div>

@@ -73,6 +73,12 @@ export interface UserCoverageStatsDto {
   coveragePercentage: number;
 }
 
+export interface QueueStatusDto {
+  success: boolean;
+  queueLength: number;
+  timestamp: string;
+}
+
 
 
 

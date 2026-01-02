@@ -1,3 +1,4 @@
+using Common.Engine.BackgroundServices;
 using Common.Engine.Config;
 using Common.Engine.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,19 @@ public static class MessageTemplateServiceExtensions
             var logger = sp.GetRequiredService<ILogger<MessageTemplateStorageManager>>();
             return new MessageTemplateStorageManager(config.ConnectionStrings.Storage, logger);
         });
+
+        // Register queue service for batch processing
+        services.AddSingleton(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<BatchQueueService>>();
+            return new BatchQueueService(config.ConnectionStrings.Storage, logger);
+        });
+
+        // Register message sender service
+        services.AddSingleton<MessageSenderService>();
+
+        // Register background processor
+        services.AddHostedService<BatchMessageProcessorService>();
 
         services.AddScoped<MessageTemplateService>();
 

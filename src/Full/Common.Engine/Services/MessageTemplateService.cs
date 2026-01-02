@@ -9,11 +9,16 @@ namespace Common.Engine.Services;
 public class MessageTemplateService
 {
     private readonly MessageTemplateStorageManager _storageManager;
+    private readonly BatchQueueService _queueService;
     private readonly ILogger<MessageTemplateService> _logger;
 
-    public MessageTemplateService(MessageTemplateStorageManager storageManager, ILogger<MessageTemplateService> logger)
+    public MessageTemplateService(
+        MessageTemplateStorageManager storageManager, 
+        BatchQueueService queueService,
+        ILogger<MessageTemplateService> logger)
     {
         _storageManager = storageManager;
+        _queueService = queueService;
         _logger = logger;
     }
 
@@ -82,6 +87,25 @@ public class MessageTemplateService
     public async Task<List<MessageLogDto>> LogBatchMessages(string messageBatchId, List<string> recipientUpns)
     {
         var entities = await _storageManager.LogBatchMessages(messageBatchId, recipientUpns);
+        
+        // Get batch to retrieve template ID
+        var batch = await _storageManager.GetBatch(messageBatchId);
+        if (batch == null)
+        {
+            throw new InvalidOperationException($"Batch {messageBatchId} not found");
+        }
+
+        // Enqueue messages for asynchronous processing
+        var queueMessages = entities.Select(entity => new BatchQueueMessage
+        {
+            BatchId = messageBatchId,
+            MessageLogId = entity.RowKey,
+            RecipientUpn = entity.RecipientUpn ?? string.Empty,
+            TemplateId = batch.TemplateId
+        }).ToList();
+
+        await _queueService.EnqueueBatchMessagesAsync(queueMessages);
+        
         return entities.Select(MapLogToDto).ToList();
     }
 
