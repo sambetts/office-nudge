@@ -40,6 +40,33 @@ export abstract class BaseAxiosApiLoader {
             throw err;
         }
     };
+
+    loadFromApiWithFormData = async (url: string, method: string, formData: FormData, onError?: Function): Promise<any> => {
+
+        if (!this.client) {
+            this.client = this.createApiClient(this.baseUrl);
+            console.debug(this.loaderName + ": Axios client created");
+        }
+        console.debug(`${this.loaderName}: Calling ${url} with method ${method} and FormData`);
+        try {
+            const response = await this.client.request({
+                url,
+                method,
+                data: formData,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            console.debug(`${this.loaderName}: Response from ${url}: `, response.data);
+            return response.data;
+        } catch (err: unknown) {
+            if (onError) {
+                onError(err);
+            }
+            throw err;
+        }
+    };
 }
 
 // https://github.com/OfficeDev/teams-toolkit/issues/11746

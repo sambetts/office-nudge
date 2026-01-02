@@ -1,5 +1,6 @@
 ﻿using Common.Engine.Config;
 using Common.Engine.DependencyInjection;
+using Common.Engine.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddBotNotificationServices();
         services.AddGraphServices(config);
         services.AddMessageTemplateServices(config);
+        services.AddStatisticsServices(config);
 
         return config;
     }
@@ -50,7 +52,24 @@ public static class ServiceCollectionExtensions
         // Teams apps may not need full bot services
         services.AddGraphServices(config);
         services.AddMessageTemplateServices(config);
+        services.AddStatisticsServices(config);
 
         return config;
+    }
+
+    /// <summary>
+    /// Registers statistics services including GraphService and StatisticsService
+    /// </summary>
+    private static IServiceCollection AddStatisticsServices(this IServiceCollection services, AppConfig config)
+    {
+        services.AddSingleton<GraphService>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GraphService>>();
+            return new GraphService(config.GraphConfig, logger);
+        });
+
+        services.AddScoped<StatisticsService>();
+
+        return services;
     }
 }

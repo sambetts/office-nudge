@@ -133,29 +133,6 @@ public class MessageTemplateController : ControllerBase
         }
     }
 
-    // POST: api/MessageTemplate/LogSend
-    [HttpPost(nameof(LogSend))]
-    public async Task<IActionResult> LogSend([FromBody] LogMessageSendRequest request)
-    {
-        _logger.LogInformation($"Logging message send for template {request.TemplateId}");
-        
-        if (string.IsNullOrWhiteSpace(request.TemplateId) || string.IsNullOrWhiteSpace(request.Status))
-        {
-            return BadRequest("TemplateId and Status are required");
-        }
-
-        try
-        {
-            var log = await _templateService.LogMessageSend(request.TemplateId, request.RecipientUpn, request.Status);
-            return Ok(log);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error logging message send");
-            return StatusCode(500, "Error logging message send");
-        }
-    }
-
     // GET: api/MessageTemplate/GetLogs
     [HttpGet(nameof(GetLogs))]
     public async Task<IActionResult> GetLogs()
@@ -173,6 +150,39 @@ public class MessageTemplateController : ControllerBase
         var logs = await _templateService.GetMessageLogsByTemplate(templateId);
         return Ok(logs);
     }
+
+    // GET: api/MessageTemplate/GetBatches
+    [HttpGet(nameof(GetBatches))]
+    public async Task<IActionResult> GetBatches()
+    {
+        _logger.LogInformation("Getting all message batches");
+        var batches = await _templateService.GetAllBatches();
+        return Ok(batches);
+    }
+
+    // GET: api/MessageTemplate/GetBatch/{id}
+    [HttpGet("GetBatch/{id}")]
+    public async Task<IActionResult> GetBatch(string id)
+    {
+        _logger.LogInformation($"Getting batch {id}");
+        var batch = await _templateService.GetBatch(id);
+        
+        if (batch == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(batch);
+    }
+
+    // GET: api/MessageTemplate/GetLogsByBatch/{batchId}
+    [HttpGet("GetLogsByBatch/{batchId}")]
+    public async Task<IActionResult> GetLogsByBatch(string batchId)
+    {
+        _logger.LogInformation($"Getting logs for batch {batchId}");
+        var logs = await _templateService.GetMessageLogsByBatch(batchId);
+        return Ok(logs);
+    }
 }
 
 public class CreateTemplateRequest
@@ -185,11 +195,4 @@ public class UpdateTemplateRequest
 {
     public string TemplateName { get; set; } = null!;
     public string JsonPayload { get; set; } = null!;
-}
-
-public class LogMessageSendRequest
-{
-    public string TemplateId { get; set; } = null!;
-    public string? RecipientUpn { get; set; }
-    public string Status { get; set; } = null!;
 }

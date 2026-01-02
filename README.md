@@ -67,10 +67,19 @@ Create an Azure AD app registration with the following settings:
 
 **API Permissions:**
 - Microsoft Graph:
-  - `User.Read` (Delegated)
-  - `User.ReadBasic.All` (Delegated)
-  - `User.Read.All` (Application)
-  - `TeamsActivity.Send` (Application) - for bot messaging
+  - `User.Read` (Delegated) - For user authentication
+  - `User.ReadBasic.All` (Delegated) - For reading basic user information
+  - `User.Read.All` (Application) - **Required for reading user information and statistics**
+  - `TeamsActivity.Send` (Application) - **Required for bot messaging**
+  - `TeamsAppInstallation.ReadWriteForUser.All` (Application) - **Required for bot to install itself to user conversations and send messages**
+
+**Important Notes:**
+- All **Application** permissions require **admin consent**
+- After adding these permissions in Azure Portal:
+  1. Go to **API permissions** in your app registration
+  2. Click **Grant admin consent for [Your Tenant]**
+  3. Confirm by clicking **Yes**
+- Without admin consent, the application will not be able to access Microsoft Graph APIs
 
 **Authentication:**
 - Platform: Web
@@ -463,6 +472,25 @@ npm run build
 - Check redirect URIs match your deployment
 - Ensure API permissions are granted (admin consent)
 
+**Graph API Permission Errors:**
+If you see errors like "Current authenticated context is not valid for this request" or "Insufficient privileges":
+1. **Verify Application Permissions** in Azure Portal:
+   - Go to Azure Active Directory ? App registrations ? Your app
+   - Click **API permissions**
+   - Ensure all required permissions are listed:
+     - `User.Read.All` (Application)
+     - `TeamsActivity.Send` (Application)
+     - `TeamsAppInstallation.ReadWriteForUser.All` (Application)
+2. **Grant Admin Consent**:
+   - Click **Grant admin consent for [Your Tenant]**
+   - Wait a few minutes for changes to propagate
+3. **Verify Tenant ID**:
+   - Ensure your `TenantId` in configuration doesn't have extra characters
+   - Check `dotnet user-secrets list` to verify the value
+4. **Test Graph Connection**:
+   - Navigate to `/api/Diagnostics/TestGraphConnection` to verify connectivity
+   - Check logs for detailed error messages
+
 **Storage Connection Errors:**
 - Verify storage account connection string
 - Check storage account firewall rules
@@ -472,67 +500,5 @@ npm run build
 **Bot Not Responding:**
 - Verify bot app registration and credentials
 - Check bot is properly installed in Teams
+- Ensure `TeamsAppInstallation.ReadWriteForUser.All` permission is granted
 - Review Application Insights logs
-
-### Logs
-
-Enable detailed logging by adding to your user secrets or Application Settings:
-
-```bash
-# For user secrets
-dotnet user-secrets set "Logging:LogLevel:Default" "Debug"
-dotnet user-secrets set "Logging:LogLevel:Microsoft" "Information"
-```
-
-Or in production Application Settings (Azure Portal):
-```
-Logging__LogLevel__Default = Debug
-Logging__LogLevel__Microsoft = Information
-```
-
-View logs in:
-- **Local Development**: Console output when running `dotnet run`
-- **Azure App Service**: Log stream in Azure Portal or Application Insights
-- **Azure Functions**: Function logs in Azure Portal or Application Insights
-
-### Configuration Issues
-
-**Missing Configuration Values:**
-- Verify user secrets are properly set: `dotnet user-secrets list`
-- Check Application Settings in Azure Portal for production deployments
-- Ensure Key Vault references are correctly formatted if using Key Vault
-
-**User Secrets Not Loading:**
-- Verify the project has a UserSecretsId in the .csproj file
-- Check that you're running from the correct directory
-- Restart your IDE after adding user secrets
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For issues, questions, or contributions, please visit:
-- GitHub Issues: https://github.com/sambetts/office-nudge/issues
-- GitHub Repository: https://github.com/sambetts/office-nudge
-
-## Acknowledgments
-
-- Microsoft Bot Framework
-- Microsoft Teams Platform
-- Azure Table Storage
-- Fluent UI React Components
-- Adaptive Cards
-
----
-
-**Built with ?? using .NET 10 and React**

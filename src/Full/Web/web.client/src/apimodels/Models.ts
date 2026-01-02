@@ -1,5 +1,3 @@
-
-
 export interface BaseDTO { id?: string }
 
 export interface ServiceConfiguration {
@@ -19,12 +17,21 @@ export interface MessageTemplateDto {
   createdDate: string;
 }
 
+export interface MessageBatchDto {
+  id: string;
+  batchName: string;
+  templateId: string;
+  senderUpn: string;
+  createdDate: string;
+}
+
 export interface MessageLogDto {
   id: string;
-  templateId: string;
+  messageBatchId: string;
   sentDate: string;
   recipientUpn?: string;
   status: string;
+  lastError?: string;
 }
 
 export interface CreateTemplateRequest {
@@ -37,10 +44,33 @@ export interface UpdateTemplateRequest {
   jsonPayload: string;
 }
 
-export interface LogMessageSendRequest {
+export interface CreateBatchAndSendRequest {
+  batchName: string;
   templateId: string;
-  recipientUpn?: string;
+  recipientUpns: string[];
+}
+
+export interface UpdateLogStatusRequest {
   status: string;
+  lastError?: string;
+}
+
+export interface ParseFileResponse {
+  upns: string[];
+}
+
+export interface MessageStatusStatsDto {
+  sentCount: number;
+  failedCount: number;
+  pendingCount: number;
+  totalCount: number;
+}
+
+export interface UserCoverageStatsDto {
+  usersMessaged: number;
+  totalUsersInTenant: number;
+  usersNotMessaged: number;
+  coveragePercentage: number;
 }
 
 

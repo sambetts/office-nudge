@@ -54,15 +54,51 @@ public class MessageTemplateService
         await _storageManager.DeleteTemplate(templateId);
     }
 
-    public async Task<MessageLogDto> LogMessageSend(string templateId, string? recipientUpn, string status)
+    public async Task<MessageBatchDto> CreateBatch(string batchName, string templateId, string senderUpn)
     {
-        var entity = await _storageManager.LogMessageSend(templateId, recipientUpn, status);
+        _logger.LogInformation($"Creating batch '{batchName}' for template {templateId}");
+        var entity = await _storageManager.CreateBatch(batchName, templateId, senderUpn);
+        return MapBatchToDto(entity);
+    }
+
+    public async Task<List<MessageBatchDto>> GetAllBatches()
+    {
+        var entities = await _storageManager.GetAllBatches();
+        return entities.Select(MapBatchToDto).ToList();
+    }
+
+    public async Task<MessageBatchDto?> GetBatch(string batchId)
+    {
+        var entity = await _storageManager.GetBatch(batchId);
+        return entity != null ? MapBatchToDto(entity) : null;
+    }
+
+    public async Task<MessageLogDto> LogMessageSend(string messageBatchId, string? recipientUpn, string status, string? lastError = null)
+    {
+        var entity = await _storageManager.LogMessageSend(messageBatchId, recipientUpn, status, lastError);
         return MapLogToDto(entity);
+    }
+
+    public async Task<List<MessageLogDto>> LogBatchMessages(string messageBatchId, List<string> recipientUpns)
+    {
+        var entities = await _storageManager.LogBatchMessages(messageBatchId, recipientUpns);
+        return entities.Select(MapLogToDto).ToList();
+    }
+
+    public async Task UpdateMessageLogStatus(string logId, string status, string? lastError = null)
+    {
+        await _storageManager.UpdateMessageLogStatus(logId, status, lastError);
     }
 
     public async Task<List<MessageLogDto>> GetAllMessageLogs()
     {
         var entities = await _storageManager.GetAllMessageLogs();
+        return entities.Select(MapLogToDto).ToList();
+    }
+
+    public async Task<List<MessageLogDto>> GetMessageLogsByBatch(string batchId)
+    {
+        var entities = await _storageManager.GetMessageLogsByBatch(batchId);
         return entities.Select(MapLogToDto).ToList();
     }
 
@@ -84,15 +120,28 @@ public class MessageTemplateService
         };
     }
 
+    private MessageBatchDto MapBatchToDto(MessageBatchTableEntity entity)
+    {
+        return new MessageBatchDto
+        {
+            Id = entity.RowKey,
+            BatchName = entity.BatchName,
+            TemplateId = entity.TemplateId,
+            SenderUpn = entity.SenderUpn,
+            CreatedDate = entity.CreatedDate
+        };
+    }
+
     private MessageLogDto MapLogToDto(MessageLogTableEntity entity)
     {
         return new MessageLogDto
         {
             Id = entity.RowKey,
-            TemplateId = entity.TemplateId,
+            MessageBatchId = entity.MessageBatchId,
             SentDate = entity.SentDate,
             RecipientUpn = entity.RecipientUpn,
-            Status = entity.Status
+            Status = entity.Status,
+            LastError = entity.LastError
         };
     }
 }
@@ -106,11 +155,21 @@ public class MessageTemplateDto
     public DateTime CreatedDate { get; set; }
 }
 
+public class MessageBatchDto
+{
+    public string Id { get; set; } = null!;
+    public string BatchName { get; set; } = null!;
+    public string TemplateId { get; set; } = null!;
+    public string SenderUpn { get; set; } = null!;
+    public DateTime CreatedDate { get; set; }
+}
+
 public class MessageLogDto
 {
     public string Id { get; set; } = null!;
-    public string TemplateId { get; set; } = null!;
+    public string MessageBatchId { get; set; } = null!;
     public DateTime SentDate { get; set; }
     public string? RecipientUpn { get; set; }
     public string Status { get; set; } = null!;
+    public string? LastError { get; set; }
 }

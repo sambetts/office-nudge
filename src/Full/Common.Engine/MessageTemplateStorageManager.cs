@@ -14,6 +14,7 @@ public class MessageTemplateStorageManager : TableStorageManager
     private readonly BlobServiceClient _blobServiceClient;
     private readonly ILogger _logger;
     private const string TEMPLATES_TABLE_NAME = "messagetemplates";
+    private const string BATCHES_TABLE_NAME = "messagebatches";
     private const string LOGS_TABLE_NAME = "messagelogs";
     private const string BLOB_CONTAINER_NAME = "message-templates";
 
@@ -99,7 +100,10 @@ public class MessageTemplateStorageManager : TableStorageManager
             throw new InvalidOperationException($"Template {templateId} not found");
         }
 
-        var blobClient = new BlobClient(new Uri(template.BlobUrl));
+        var containerClient = _blobServiceClient.GetBlobContainerClient(BLOB_CONTAINER_NAME);
+        var blobName = $"{templateId}.json";
+        var blobClient = containerClient.GetBlobClient(blobName);
+        
         var response = await blobClient.DownloadContentAsync();
         return response.Value.Content.ToString();
     }
@@ -141,7 +145,9 @@ public class MessageTemplateStorageManager : TableStorageManager
         }
 
         // Delete blob
-        var blobClient = new BlobClient(new Uri(template.BlobUrl));
+        var containerClient = _blobServiceClient.GetBlobContainerClient(BLOB_CONTAINER_NAME);
+        var blobName = $"{templateId}.json";
+        var blobClient = containerClient.GetBlobClient(blobName);
         await blobClient.DeleteIfExistsAsync();
 
         // Delete table entry
@@ -167,27 +173,143 @@ public class MessageTemplateStorageManager : TableStorageManager
 
     #endregion
 
+    #region Batch Management
+
+    /// <summary>
+    /// Create a new message batch
+    /// </summary>
+    public async Task<MessageBatchTableEntity> CreateBatch(string batchName, string templateId, string senderUpn)
+    {
+        var batchId = Guid.NewGuid().ToString();
+        
+        var batchEntity = new MessageBatchTableEntity
+        {
+            RowKey = batchId,
+            BatchName = batchName,
+            TemplateId = templateId,
+            SenderUpn = senderUpn,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        var tableClient = await GetTableClient(BATCHES_TABLE_NAME);
+        await tableClient.AddEntityAsync(batchEntity);
+
+        _logger.LogInformation($"Created batch '{batchName}' with ID {batchId}");
+        return batchEntity;
+    }
+
+    /// <summary>
+    /// Get all message batches
+    /// </summary>
+    public async Task<List<MessageBatchTableEntity>> GetAllBatches()
+    {
+        var tableClient = await GetTableClient(BATCHES_TABLE_NAME);
+        var batches = new List<MessageBatchTableEntity>();
+
+        await foreach (var entity in tableClient.QueryAsync<MessageBatchTableEntity>(
+            filter: $"PartitionKey eq '{MessageBatchTableEntity.PartitionKeyVal}'"))
+        {
+            batches.Add(entity);
+        }
+
+        return batches;
+    }
+
+    /// <summary>
+    /// Get a specific batch by ID
+    /// </summary>
+    public async Task<MessageBatchTableEntity?> GetBatch(string batchId)
+    {
+        var tableClient = await GetTableClient(BATCHES_TABLE_NAME);
+        try
+        {
+            var response = await tableClient.GetEntityAsync<MessageBatchTableEntity>(
+                MessageBatchTableEntity.PartitionKeyVal, batchId);
+            return response.Value;
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+    }
+
+    #endregion
+
     #region Message Logs
 
     /// <summary>
     /// Log a message send event
     /// </summary>
-    public async Task<MessageLogTableEntity> LogMessageSend(string templateId, string? recipientUpn, string status)
+    public async Task<MessageLogTableEntity> LogMessageSend(string messageBatchId, string? recipientUpn, string status, string? lastError = null)
     {
         var logEntity = new MessageLogTableEntity
         {
             RowKey = Guid.NewGuid().ToString(),
-            TemplateId = templateId,
+            MessageBatchId = messageBatchId,
             SentDate = DateTime.UtcNow,
             RecipientUpn = recipientUpn,
-            Status = status
+            Status = status,
+            LastError = lastError
         };
 
         var tableClient = await GetTableClient(LOGS_TABLE_NAME);
         await tableClient.AddEntityAsync(logEntity);
 
-        _logger.LogInformation($"Logged message send for template {templateId}");
+        _logger.LogInformation($"Logged message send for batch {messageBatchId}");
         return logEntity;
+    }
+
+    /// <summary>
+    /// Create multiple message log entries for a batch
+    /// </summary>
+    public async Task<List<MessageLogTableEntity>> LogBatchMessages(string messageBatchId, List<string> recipientUpns)
+    {
+        var tableClient = await GetTableClient(LOGS_TABLE_NAME);
+        var logEntities = new List<MessageLogTableEntity>();
+
+        foreach (var recipientUpn in recipientUpns)
+        {
+            var logEntity = new MessageLogTableEntity
+            {
+                RowKey = Guid.NewGuid().ToString(),
+                MessageBatchId = messageBatchId,
+                SentDate = DateTime.UtcNow,
+                RecipientUpn = recipientUpn,
+                Status = "Pending",
+                LastError = null
+            };
+
+            await tableClient.AddEntityAsync(logEntity);
+            logEntities.Add(logEntity);
+        }
+
+        _logger.LogInformation($"Created {logEntities.Count} message logs for batch {messageBatchId}");
+        return logEntities;
+    }
+
+    /// <summary>
+    /// Update a message log status
+    /// </summary>
+    public async Task UpdateMessageLogStatus(string logId, string status, string? lastError = null)
+    {
+        var tableClient = await GetTableClient(LOGS_TABLE_NAME);
+        
+        try
+        {
+            var response = await tableClient.GetEntityAsync<MessageLogTableEntity>(
+                MessageLogTableEntity.PartitionKeyVal, logId);
+            var logEntity = response.Value;
+
+            logEntity.Status = status;
+            logEntity.LastError = lastError;
+
+            await tableClient.UpdateEntityAsync(logEntity, logEntity.ETag, TableUpdateMode.Replace);
+            _logger.LogInformation($"Updated message log {logId} to status {status}");
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+        {
+            _logger.LogWarning($"Message log {logId} not found");
+        }
     }
 
     /// <summary>
@@ -208,17 +330,35 @@ public class MessageTemplateStorageManager : TableStorageManager
     }
 
     /// <summary>
-    /// Get message logs for a specific template
+    /// Get message logs for a specific batch
     /// </summary>
-    public async Task<List<MessageLogTableEntity>> GetMessageLogsByTemplate(string templateId)
+    public async Task<List<MessageLogTableEntity>> GetMessageLogsByBatch(string batchId)
     {
         var tableClient = await GetTableClient(LOGS_TABLE_NAME);
         var logs = new List<MessageLogTableEntity>();
 
         await foreach (var entity in tableClient.QueryAsync<MessageLogTableEntity>(
-            filter: $"PartitionKey eq '{MessageLogTableEntity.PartitionKeyVal}' and TemplateId eq '{templateId}'"))
+            filter: $"PartitionKey eq '{MessageLogTableEntity.PartitionKeyVal}' and MessageBatchId eq '{batchId}'"))
         {
             logs.Add(entity);
+        }
+
+        return logs;
+    }
+
+    /// <summary>
+    /// Get message logs for a specific template (via batches)
+    /// </summary>
+    public async Task<List<MessageLogTableEntity>> GetMessageLogsByTemplate(string templateId)
+    {
+        var batches = await GetAllBatches();
+        var templateBatches = batches.Where(b => b.TemplateId == templateId).ToList();
+        
+        var logs = new List<MessageLogTableEntity>();
+        foreach (var batch in templateBatches)
+        {
+            var batchLogs = await GetMessageLogsByBatch(batch.RowKey);
+            logs.AddRange(batchLogs);
         }
 
         return logs;
