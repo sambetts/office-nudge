@@ -21,9 +21,9 @@ public static class GraphServiceExtensions
         var options = new TokenCredentialOptions { AuthorityHost = AzureAuthorityHosts.AzurePublicCloud };
         var scopes = new[] { "https://graph.microsoft.com/.default" };
         var clientSecretCredential = new ClientSecretCredential(
-            config.ImportAuthConfig.TenantId,
-            config.ImportAuthConfig.ClientId,
-            config.ImportAuthConfig.ClientSecret,
+            config.GraphConfig.TenantId,
+            config.GraphConfig.ClientId,
+            config.GraphConfig.ClientSecret,
             options);
 
         services.AddSingleton(sp => new GraphServiceClient(clientSecretCredential, scopes));

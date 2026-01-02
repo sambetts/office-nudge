@@ -12,7 +12,9 @@ public class TeamsAppConfig : AppConfig
     {
     }
 
-
+    /// <summary>
+    /// Identity for accessing the web interface.
+    /// </summary>
     [ConfigSection()]
     public AzureADAuthConfig WebAuthConfig { get; set; } = null!;
 
@@ -36,4 +38,10 @@ public class BotConfig : TeamsAppConfig
     // Leaving these as default names for now so as to not mess with bot framework defaults
     [ConfigValue(backingPropertyName: "MicrosoftAppId")] public string BotAppId { get; set; } = null!;
     [ConfigValue(backingPropertyName: "MicrosoftAppPassword")] public string BotAppSecret { get; set; } = null!;
+
+    /// <summary>
+    /// Hack for dev testing
+    /// </summary>
+    [ConfigValue(true)]
+    public string TestUPN { get; set; } = null!;
 }

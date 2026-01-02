@@ -43,7 +43,7 @@ public class TeamsBot<T>(ConversationState conversationState, UserState userStat
                 else
                 {
                     // Resume conversation.
-                    var upn = cachedUser.UserPrincipalName ?? _configuration.TestUPN;
+                    var upn = cachedUser.UserPrincipalName;
                     if (upn != null)
                     {
                         // Send next survey card

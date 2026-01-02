@@ -1,10 +1,7 @@
 using Common.Engine;
 using Common.Engine.Notifications;
-using Entities.DB;
-using Entities.DB.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Bot.Builder;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Web.Server.Bots;
 using Web.Server.Bots.Dialogues;
@@ -48,10 +45,6 @@ public class Program
                 o.Instance = "https://login.microsoftonline.com/";
             });
 
-        // UsageStatsReport
-        builder.Services.AddDbContext<DataContext>(options =>
-            options.UseSqlServer(config.ConnectionStrings.SQL));
-
         // Bot services --->
         // Create the Bot Framework Adapter with error handling enabled.
 
@@ -85,29 +78,6 @@ public class Program
             await botCache.RemoveFromCache(user.RowKey);
         }
 #endif
-
-        // Ensure DB
-        var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-        optionsBuilder.UseSqlServer(config.ConnectionStrings.SQL);
-
-        using (var db = new DataContext(optionsBuilder.Options))
-        {
-            var logger = LoggerFactory.Create(c =>
-            {
-                c.AddConsole();
-
-                if (config.AppInsightsConnectionString != null)
-                {
-                    c.AddApplicationInsights(configureTelemetryConfiguration: (appInsightConfig) =>
-                        appInsightConfig.ConnectionString = config.AppInsightsConnectionString,
-                        configureApplicationInsightsLoggerOptions: (options) => { }
-                    );
-                }
-            }).CreateLogger("DB init");
-            logger.LogInformation($"Using SQL connection-string: {config.ConnectionStrings.SQL}");
-            await DbInitialiser.EnsureInitialised(db, logger, config.TestUPN, config.DevMode);
-
-        }
 
         // https://learn.microsoft.com/en-us/visualstudio/javascript/tutorial-asp-net-core-with-react?view=vs-2022#publish-the-project
         app.UseDefaultFiles();

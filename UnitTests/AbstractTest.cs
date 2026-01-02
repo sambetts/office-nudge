@@ -1,6 +1,5 @@
-﻿using Entities.DB;
-using Entities.DB.DbContexts;
-using Microsoft.EntityFrameworkCore;
+﻿
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +8,6 @@ namespace UnitTests;
 public abstract class AbstractTest
 {
     protected ILogger _logger;
-    protected DataContext _db;
     protected TestsConfig _config;
 
     public AbstractTest()
@@ -27,17 +25,6 @@ public abstract class AbstractTest
         var configCollection = builder.Build();
         _config = new TestsConfig(configCollection);
 
-        var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-        optionsBuilder.UseSqlServer(_config.ConnectionStrings.SQL);
-
-        _db = new DataContext(optionsBuilder.Options);
-    }
-
-
-    [TestInitialize]
-    public async Task TestInitialize()
-    {
-        await DbInitialiser.EnsureInitialised(_db, _logger, _config.TestUPN, true);
     }
 
     protected ILogger<T> GetLogger<T>()

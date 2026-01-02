@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common.Engine\Common.Engine.csproj" />
-    <ProjectReference Include="..\Entities.DB\Entities.DB.csproj" />
   </ItemGroup>
 
 </Project>

@@ -18,15 +18,7 @@ public static class BotUserUtils
     }
     public static async Task<BotUser> GetBotUserAsync(ChannelAccount channelUser, BotConfig botConfig, GraphServiceClient graphServiceClient)
     {
-        // Testing hack
-        BotUser botUser;
-        if (!string.IsNullOrEmpty(botConfig.TestUPN))
-        {
-            var user = await graphServiceClient.Users[botConfig.TestUPN].GetAsync(op => op.QueryParameters.Select = ["Id"]);
-            botUser = new BotUser { UserId = user!.Id!, IsAzureAdUserId = true };
-        }
-        else
-            botUser = ParseBotUserInfo(channelUser);
+        BotUser botUser = ParseBotUserInfo(channelUser);
 
         return botUser;
     }

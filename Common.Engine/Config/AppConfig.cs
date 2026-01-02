@@ -8,7 +8,7 @@ public class AppConfig : PropertyBoundConfig
     public AppConfig() : base()
     {
         ConnectionStrings = new AppConnectionStrings();
-        ImportAuthConfig = new AzureADAuthConfig();
+        GraphConfig = new AzureADAuthConfig();
     }
 
     public AppConfig(IConfiguration config) : base(config)
@@ -16,18 +16,11 @@ public class AppConfig : PropertyBoundConfig
     }
 
     [ConfigSection()]
-    public AzureADAuthConfig ImportAuthConfig { get; set; } = null!;
+    public AzureADAuthConfig GraphConfig { get; set; } = null!;
 
 
     [ConfigValue(true, "APPLICATIONINSIGHTS_CONNECTION_STRING")]
     public string? AppInsightsConnectionString { get; set; }
-
-    /// <summary>
-    /// Hack for dev testing
-    /// </summary>
-    [ConfigValue(true)]
-    public string TestUPN { get; set; } = null!;
-
 
     [ConfigValue(true)]
     public bool DevMode { get; set; } = false;
@@ -43,15 +36,6 @@ public class AppConnectionStrings : PropertyBoundConfig
     }
 
     public AppConnectionStrings(IConfigurationSection config) : base(config) { }
-
-    [ConfigValue]
-    public string SQL { get; set; } = null!;
-
-    [ConfigValue]
-    public string Redis { get; set; } = null!;
-
-    public string ServiceBusRoot { get; set; } = null!;
-
 
     [ConfigValue]
     public string Storage { get; set; } = null!;

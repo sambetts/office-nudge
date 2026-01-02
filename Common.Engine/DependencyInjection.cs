@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddBotFrameworkServices();
         services.AddBotNotificationServices();
         services.AddGraphServices(config);
-        services.AddDataServices(config);
+        services.AddMessageTemplateServices(config);
 
         return config;
     }
@@ -49,7 +49,7 @@ public static class ServiceCollectionExtensions
 
         // Teams apps may not need full bot services
         services.AddGraphServices(config);
-        services.AddDataServices(config);
+        services.AddMessageTemplateServices(config);
 
         return config;
     }
