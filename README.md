@@ -85,6 +85,10 @@ A Microsoft Teams bot application that enables administrators to create, manage,
 - [Azure Subscription](https://azure.microsoft.com/free/)
 - [Microsoft 365 Developer Tenant](https://developer.microsoft.com/microsoft-365/dev-program) (optional for development)
 
+## Project Structure
+
+The solution is located in the `src/Full` directory. All projects (Web.Server, Common.Engine, Common.DataUtils, Functions, and UnitTests) are within this subdirectory.
+
 ## Azure Resources Required
 
 1. **Azure Storage Account**: For table storage (metadata) and blob storage (JSON payloads) - **No SQL database needed**
@@ -198,6 +202,7 @@ VITE_TEAMSFX_START_LOGIN_PAGE_URL=https://your-domain.com/auth-start.html
 If using Azure Functions, configure user secrets for the Functions project:
 
 ```bash
+# Navigate to Functions directory (from src/Full)
 cd Functions
 dotnet user-secrets init
 
@@ -246,7 +251,7 @@ For production deployments to Azure App Service or Azure Functions:
 
 ```bash
 git clone https://github.com/sambetts/office-nudge.git
-cd office-nudge/src
+cd office-nudge/src/Full
 ```
 
 ### 2. Restore Backend Dependencies
@@ -410,20 +415,17 @@ Navigate to the message logs section to view:
 dotnet publish Web/Web.Server/Web.Server.csproj -c Release -o ./publish
 
 # Deploy to Azure App Service (replace with your app name)
-az webapp deploy --resource-group <resource-group> --name <app-name> --src-path ./publish.zip --type zip
+az webapp deploy --resource-group myResourceGroup --name myAppName --src-path ./publish
 ```
 
 Or deploy using Visual Studio:
 - Right-click on `Web.Server` project ? Publish
-- Select Azure ? Azure App Service
-- Follow the wizard to configure and deploy
 
 ### Azure Functions Deployment
 
 If using Azure Functions:
 
 ```bash
-# Navigate to Functions directory
 cd Functions
 
 # Publish to Azure Functions
