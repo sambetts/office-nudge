@@ -1,0 +1,56 @@
+﻿using Common.Engine.Config;
+using Common.Engine.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Common.Engine;
+
+/// <summary>
+/// Main dependency injection configuration for Common.Engine services.
+/// Orchestrates registration of bot, graph, and data services.
+/// </summary>
+public static class ServiceCollectionExtensions
+{
+    /// <summary>
+    /// Registers all services required for a bot application including bot framework,
+    /// Microsoft Graph, and data access services.
+    /// </summary>
+    /// <param name="services">The service collection to add services to</param>
+    /// <param name="configuration">The application configuration</param>
+    /// <returns>The configured BotConfig instance</returns>
+    public static BotConfig AddBotServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var config = new BotConfig(configuration);
+        services.AddSingleton(config);
+        services.AddSingleton<AppConfig>(config);
+        services.AddSingleton<TeamsAppConfig>(config);
+
+        // Register services using extension methods for better organization
+        services.AddBotFrameworkServices();
+        services.AddBotNotificationServices();
+        services.AddGraphServices(config);
+        services.AddDataServices(config);
+
+        return config;
+    }
+
+    /// <summary>
+    /// Registers services required for a Teams application (without bot framework).
+    /// Includes Microsoft Graph and data access services.
+    /// </summary>
+    /// <param name="services">The service collection to add services to</param>
+    /// <param name="configuration">The application configuration</param>
+    /// <returns>The configured TeamsAppConfig instance</returns>
+    public static TeamsAppConfig AddTeamsAppServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var config = new TeamsAppConfig(configuration);
+        services.AddSingleton(config);
+        services.AddSingleton<AppConfig>(config);
+
+        // Teams apps may not need full bot services
+        services.AddGraphServices(config);
+        services.AddDataServices(config);
+
+        return config;
+    }
+}

@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<InvariantGlobalization>false</InvariantGlobalization>
+		<UserSecretsId>ae8ee577-91bc-4ce6-826b-554211828541</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+
+		<SpaRoot>..\web.client</SpaRoot>
+		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+		<SpaProxyServerUrl>https://localhost:5173</SpaProxyServerUrl>
+		<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
+		<DockerfileContext>..\..</DockerfileContext>
+		<DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Bots\SurveyConversationResumeHandler.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\web.client\web.client.esproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+		</ProjectReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
+		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.24.0" />
+		<PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
+		<PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
+		<PackageReference Include="Microsoft.AspNetCore.SpaProxy">
+			<Version>10.0.1</Version>
+		</PackageReference>
+
+		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
+		<PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.23.0" />
+		<PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.23.0" />
+		<PackageReference Include="Microsoft.Identity.Web" Version="4.2.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Common.Engine\Common.Engine.csproj" />
+	</ItemGroup>
+
+</Project>
