@@ -42,7 +42,7 @@ A Microsoft Teams bot application that enables administrators to create, manage,
 
 ## Project Structure
 
-The solution is located in the `src/Full` directory. All projects (Web.Server, Common.Engine, Common.DataUtils, Functions, and UnitTests) are within this subdirectory.
+The solution is located in the `src/Full` directory. All projects (Web.Server, Common.Engine, Common.DataUtils, and UnitTests) are within this subdirectory.
 
 ## Azure Resources Required
 
@@ -165,53 +165,16 @@ VITE_MSAL_SCOPES=api://your-app-registration-client-id/access_as_user
 VITE_TEAMSFX_START_LOGIN_PAGE_URL=https://your-domain.com/auth-start.html
 ```
 
-### 4. Azure Functions Configuration (Optional)
+### 4. Production Configuration
 
-If using Azure Functions, configure user secrets for the Functions project:
-
-```bash
-# Navigate to Functions directory (from src/Full)
-cd Functions
-dotnet user-secrets init
-
-# Graph API Configuration
-dotnet user-secrets set "GraphConfig:ClientId" "your-app-registration-client-id"
-dotnet user-secrets set "GraphConfig:ClientSecret" "your-app-registration-client-secret"
-dotnet user-secrets set "GraphConfig:TenantId" "your-tenant-id"
-
-# Storage Connection
-dotnet user-secrets set "ConnectionStrings:Storage" "DefaultEndpointsProtocol=https;AccountName=yourstorageaccount;AccountKey=your-storage-key;EndpointSuffix=core.windows.net"
-```
-
-You can also use `Functions/local.settings.json` for local Functions development (this file is git-ignored):
-
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    
-    "GraphConfig:ClientId": "your-app-registration-client-id",
-    "GraphConfig:ClientSecret": "your-app-registration-client-secret",
-    "GraphConfig:TenantId": "your-tenant-id",
-    
-    "ConnectionStrings:Storage": "DefaultEndpointsProtocol=https;AccountName=yourstorageaccount;AccountKey=your-storage-key;EndpointSuffix=core.windows.net"
-  }
-}
-```
-
-### 5. Production Configuration
-
-For production deployments to Azure App Service or Azure Functions:
+For production deployments to Azure App Service:
 
 1. **Azure App Service**: Configure application settings in the Azure Portal under Configuration ? Application Settings
-2. **Azure Functions**: Configure application settings in the Azure Portal under Configuration ? Application Settings
-3. **Azure Key Vault**: For enhanced security, store secrets in Azure Key Vault and reference them in your application settings:
+2. **Azure Key Vault**: For enhanced security, store secrets in Azure Key Vault and reference them in your application settings:
    ```
    @Microsoft.KeyVault(SecretUri=https://your-keyvault.vault.azure.net/secrets/StorageConnectionString/)
    ```
-4. **Managed Identity**: Use system-assigned or user-assigned managed identities to access Azure resources without storing credentials
+3. **Managed Identity**: Use system-assigned or user-assigned managed identities to access Azure resources without storing credentials
 
 ## Installation & Setup
 
@@ -389,19 +352,6 @@ az webapp deploy --resource-group myResourceGroup --name myAppName --src-path ./
 Or deploy using Visual Studio:
 - Right-click on `Web.Server` project ? Publish
 
-### Azure Functions Deployment
-
-If using Azure Functions:
-
-```bash
-cd Functions
-
-# Publish to Azure Functions
-func azure functionapp publish <function-app-name>
-```
-
-**Configure Application Settings** in the Azure Portal after deployment.
-
 ### Azure Static Web Apps (Frontend Only)
 
 If separating frontend and backend:
@@ -420,7 +370,7 @@ npm run build
    - `StorageConnectionString`
    - `BotAppPassword`
    - `ApplicationInsightsConnectionString`
-3. Enable Managed Identity on your App Service/Function App
+3. Enable Managed Identity on your App Service
 4. Grant the managed identity access to Key Vault (Access Policies or RBAC)
 5. Reference secrets in Application Settings:
    ```
