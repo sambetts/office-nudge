@@ -3,7 +3,6 @@
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<InvariantGlobalization>false</InvariantGlobalization>
-		<UserSecretsId>ae8ee577-91bc-4ce6-826b-554211828541</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 
 		<SpaRoot>..\web.client</SpaRoot>
@@ -12,6 +11,7 @@
 		<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
 		<DockerfileContext>..\..</DockerfileContext>
 		<DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+		<UserSecretsId>263c424d-1933-4dfd-97c9-0da59bbff446</UserSecretsId>
 
 	</PropertyGroup>
 

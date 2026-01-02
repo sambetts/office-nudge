@@ -46,7 +46,6 @@ public class TeamsBot<T>(ConversationState conversationState, UserState userStat
                     var upn = cachedUser.UserPrincipalName;
                     if (upn != null)
                     {
-                        // Send next survey card
                         var nextActionAndCard = await conversationResumeHandler.LoadDataAndResumeConversation(upn);
                         var resumeActivity = MessageFactory.Attachment(nextActionAndCard.Item2);
                         await turnContext.SendActivityAsync(resumeActivity, cancellationToken);

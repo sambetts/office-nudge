@@ -57,6 +57,9 @@ public class Program
         // Create the Conversation state. (Used by the Dialog system itself.)
         builder.Services.AddSingleton<ConversationState>();
 
+        // Register conversation resume handler
+        builder.Services.AddSingleton<IConversationResumeHandler<string>, DefaultConversationResumeHandler>();
+
         // Bot diags
         builder.Services.AddSingleton<MainDialogue>();
 
