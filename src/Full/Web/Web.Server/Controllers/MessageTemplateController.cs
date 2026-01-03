@@ -183,6 +183,28 @@ public class MessageTemplateController : ControllerBase
         var logs = await _templateService.GetMessageLogsByBatch(batchId);
         return Ok(logs);
     }
+
+    // DELETE: api/MessageTemplate/DeleteBatch/{id}
+    [HttpDelete("DeleteBatch/{id}")]
+    public async Task<IActionResult> DeleteBatch(string id)
+    {
+        _logger.LogInformation($"Deleting batch {id}");
+        
+        try
+        {
+            await _templateService.DeleteBatch(id);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting batch");
+            return StatusCode(500, "Error deleting batch");
+        }
+    }
 }
 
 public class CreateTemplateRequest

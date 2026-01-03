@@ -369,3 +369,4 @@ FodyWeavers.xsd
 /Functions/Properties/serviceDependencies.CopilotFeedbackBotFunctionsDev - Zip Deploy.json
 /Web/Properties/ServiceDependencies/feedbackbotdev - Web Deploy/profile.arm.json
 /ActivityImporter.ConsoleApp/Properties/ServiceDependencies/feedbackbotdev - Web Deploy
+src/Full/Teams Apps/User/manifest.json

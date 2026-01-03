@@ -51,6 +51,10 @@ export const getBatch = async (loader: BaseAxiosApiLoader, id: string): Promise<
   return loader.loadFromApi(`api/MessageTemplate/GetBatch/${id}`, 'GET');
 }
 
+export const deleteBatch = async (loader: BaseAxiosApiLoader, id: string): Promise<void> => {
+  return loader.loadFromApi(`api/MessageTemplate/DeleteBatch/${id}`, 'DELETE');
+}
+
 // Send Nudge API calls
 export const parseFile = async (loader: BaseAxiosApiLoader, file: File): Promise<ParseFileResponse> => {
   const formData = new FormData();

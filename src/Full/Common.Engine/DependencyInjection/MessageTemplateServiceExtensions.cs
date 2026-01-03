@@ -40,6 +40,9 @@ public static class MessageTemplateServiceExtensions
 
         services.AddScoped<MessageTemplateService>();
 
+        // Register pending card lookup service
+        services.AddScoped<PendingCardLookupService>();
+
         return services;
     }
 }

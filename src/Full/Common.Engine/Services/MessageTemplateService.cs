@@ -78,6 +78,12 @@ public class MessageTemplateService
         return entity != null ? MapBatchToDto(entity) : null;
     }
 
+    public async Task DeleteBatch(string batchId)
+    {
+        _logger.LogInformation($"Deleting batch {batchId}");
+        await _storageManager.DeleteBatch(batchId);
+    }
+
     public async Task<MessageLogDto> LogMessageSend(string messageBatchId, string? recipientUpn, string status, string? lastError = null)
     {
         var entity = await _storageManager.LogMessageSend(messageBatchId, recipientUpn, status, lastError);

@@ -1,6 +1,7 @@
 ﻿using Common.Engine;
 using Common.Engine.Config;
 using Common.Engine.Notifications;
+using Common.Engine.Services;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
@@ -9,7 +10,7 @@ using Microsoft.Graph;
 namespace Web.Server.Bots;
 
 public class TeamsBot<T>(ConversationState conversationState, UserState userState, T dialog, ILogger<DialogueBot<T>> logger, BotActionsHelper helper, GraphServiceClient graphServiceClient,
-    BotConfig configuration, BotConversationCache botConversationCache, IConversationResumeHandler<string> conversationResumeHandler)
+    BotConfig configuration, BotConversationCache botConversationCache, IConversationResumeHandler<PendingCardInfo> conversationResumeHandler)
     : DialogueBot<T>(conversationState, userState, dialog, logger) where T : Dialog
 {
     public readonly BotConfig _configuration = configuration;
@@ -42,12 +43,12 @@ public class TeamsBot<T>(ConversationState conversationState, UserState userStat
                 }
                 else
                 {
-                    // Resume conversation.
+                    // Resume conversation - get next card to send.
                     var upn = cachedUser.UserPrincipalName;
                     if (upn != null)
                     {
-                        var nextActionAndCard = await conversationResumeHandler.LoadDataAndResumeConversation(upn);
-                        var resumeActivity = MessageFactory.Attachment(nextActionAndCard.Item2);
+                        var (_, nextCardToSend) = await conversationResumeHandler.LoadDataAndResumeConversation(upn);
+                        var resumeActivity = MessageFactory.Attachment(nextCardToSend);
                         await turnContext.SendActivityAsync(resumeActivity, cancellationToken);
 
                     }

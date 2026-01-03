@@ -30,10 +30,27 @@
 .PARAMETER UseDefaultCard
     Switch to send a simple default card if no JSON file is provided.
 
+.PARAMETER TeamsAppId
+    The Teams App ID (GUID) containing the bot to install for users. Required for creating new bot chats.
+
+.PARAMETER BotId
+    The Bot's Azure AD App ID (GUID). This is the app ID of the bot within the Teams app.
+
 .NOTES
-    Required Graph application permissions: Chat.Create, Chat.ReadWrite, ChatMessage.Send (admin consent required).
+    Required Graph application permissions (admin consent required):
+    - User.Read.All: Read user information
+    - Chat.Create: Create new chats
+    - Chat.ReadWrite.All: Read and write chats and messages (replaces ChatMessage.Send for application permissions)
+    - TeamsAppInstallation.ReadWriteForUser.All: Install Teams apps for users (required for bot-based messaging)
+    - Teamwork.Migrate.All: Required when sending messages to bot chats. This permission allows the app to send messages
+      on behalf of bots in Teams. Even though it's named "Migrate", it's the required permission for proactive bot
+      messaging via Graph API when the bot is not directly handling the message through Bot Framework.
+    
+    Note: ChatMessage.Send is a delegated permission only, not available for application permissions.
+    
     Tested with Microsoft.Graph PowerShell SDK (v1.x) using v1.0 profile.
     For Excel file processing, requires ImportExcel module (will be installed if not present).
+    For creating chats with a bot, both TeamsAppId and BotId are required.
 #>
 
 param(
@@ -61,7 +78,13 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$CachePath = ".\chatCache.json",
 
-    [switch]$UseDefaultCard
+    [switch]$UseDefaultCard,
+
+    [Parameter(Mandatory=$false)]
+    [string]$TeamsAppId,
+
+    [Parameter(Mandatory=$false)]
+    [string]$BotId
 )
 
 function Test-PowerShellVersion {
@@ -78,10 +101,9 @@ function Test-PowerShellVersion {
 function Ensure-GraphModule {
     if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
         Write-Host "Installing Microsoft.Graph module..." -ForegroundColor Cyan
-        Install-Module Microsoft.Graph -Scope CurrentUser -Force -ErrorAction Stop
+        Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
     }
     Import-Module Microsoft.Graph -ErrorAction Stop
-    Select-MgProfile -Name "v1.0"
 }
 
 function Ensure-ImportExcelModule {
@@ -99,8 +121,9 @@ function Connect-AppOnly {
         [string]$ClientSecret
     )
     $secureSecret = ConvertTo-SecureString $ClientSecret -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential($ClientId, $secureSecret)
     Write-Host "Connecting to Microsoft Graph (app-only)..." -ForegroundColor Cyan
-    Connect-MgGraph -TenantId $TenantId -ClientId $ClientId -ClientSecret $secureSecret -NoWelcome -ErrorAction Stop
+    Connect-MgGraph -TenantId $TenantId -ClientSecretCredential $credential -NoWelcome -ErrorAction Stop
 }
 
 function Get-UserByUpn {
@@ -164,7 +187,13 @@ function Load-Cache {
     param([string]$Path)
     if (Test-Path -LiteralPath $Path) {
         try {
-            return Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+            $jsonContent = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+            # Convert PSCustomObject to Hashtable
+            $hashtable = @{}
+            foreach ($property in $jsonContent.PSObject.Properties) {
+                $hashtable[$property.Name] = $property.Value
+            }
+            return $hashtable
         } catch {
             Write-Warning "Failed to read cache at '$Path'. Starting with an empty cache."
             return @{}
@@ -181,11 +210,70 @@ function Save-Cache {
     ($Cache | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $Path -Encoding UTF8
 }
 
+function Install-TeamsAppForUser {
+    param(
+        [string]$UserId,
+        [string]$TeamsAppId
+    )
+    
+    Write-Host "Installing Teams app $TeamsAppId for user $UserId..." -ForegroundColor Cyan
+    
+    # Check if app is already installed and get the chat ID
+    try {
+        $installedApps = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/$UserId/teamwork/installedApps?`$expand=teamsApp,teamsAppDefinition&`$filter=teamsApp/id eq '$TeamsAppId'" -ErrorAction Stop
+        
+        if ($installedApps.value -and $installedApps.value.Count -gt 0) {
+            Write-Host "Teams app already installed." -ForegroundColor DarkGreen
+            $installationId = $installedApps.value[0].id
+            
+            # Get the chat associated with this installation
+            $chatInfo = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/$UserId/teamwork/installedApps/$installationId/chat" -ErrorAction Stop
+            return $chatInfo.id
+        }
+    } catch {
+        Write-Warning "Could not check existing app installations: $($_.Exception.Message)"
+    }
+    
+    # Install the app
+    try {
+        $body = @{
+            "teamsApp@odata.bind" = "https://graph.microsoft.com/v1.0/appCatalogs/teamsApps/$TeamsAppId"
+        }
+        
+        $installation = Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/users/$UserId/teamwork/installedApps" -Body $body -ErrorAction Stop
+        Write-Host "Teams app installed successfully." -ForegroundColor Green
+        
+        # Extract installation ID from the response location header or ID
+        $installationId = $installation.id
+        if (-not $installationId) {
+            # Wait a moment and query for it
+            Start-Sleep -Seconds 3
+            $installedApps = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/$UserId/teamwork/installedApps?`$expand=teamsApp&`$filter=teamsApp/id eq '$TeamsAppId'" -ErrorAction Stop
+            if ($installedApps.value -and $installedApps.value.Count -gt 0) {
+                $installationId = $installedApps.value[0].id
+            }
+        }
+        
+        if ($installationId) {
+            # Get the chat ID from the installation
+            Start-Sleep -Seconds 2
+            $chatInfo = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/users/$UserId/teamwork/installedApps/$installationId/chat" -ErrorAction Stop
+            return $chatInfo.id
+        } else {
+            throw "Could not retrieve installation ID after installing app."
+        }
+    } catch {
+        throw "Failed to install Teams app. Ensure TeamsAppInstallation.ReadWriteForUser.All permission is granted. Details: $($_.Exception.Message)"
+    }
+}
+
 function Get-OrCreateOneOnOneChat {
     param(
         [string]$UserId,
         [hashtable]$Cache,
-        [string]$CachePath
+        [string]$CachePath,
+        [string]$TeamsAppId,
+        [string]$BotId
     )
 
     if ($Cache.ContainsKey($UserId)) {
@@ -193,15 +281,55 @@ function Get-OrCreateOneOnOneChat {
         return $Cache[$UserId]
     }
 
-    Write-Host "Creating one-on-one chat with userId $UserId..." -ForegroundColor Cyan
-    # For oneOnOne: include the target user; the app is the other participant implicitly.
-    $member = @{
-        "@odata.type"    = "#microsoft.graph.aadUserConversationMember"
-        roles            = @("owner")
-        "user@odata.bind"= "https://graph.microsoft.com/v1.0/users('$UserId')"
+    # If using bot-based approach
+    if ($TeamsAppId -and $BotId) {
+        Write-Host "Using bot-based chat creation for userId $UserId..." -ForegroundColor Cyan
+        
+        # Install the Teams app for the user and get the chat ID
+        try {
+            $chatId = Install-TeamsAppForUser -UserId $UserId -TeamsAppId $TeamsAppId
+            
+            if ($chatId) {
+                Write-Host "Got chatId from app installation: $chatId" -ForegroundColor Green
+                $Cache[$UserId] = $chatId
+                Save-Cache -Cache $Cache -Path $CachePath
+                return $chatId
+            } else {
+                throw "Could not retrieve chat ID from app installation."
+            }
+        } catch {
+            throw "Failed to setup bot chat. Details: $($_.Exception.Message)"
+        }
     }
 
+    # Fallback: search for existing chats
+    Write-Host "Searching for existing chat with userId $UserId..." -ForegroundColor Cyan
     try {
+        $chats = Get-MgChat -Filter "chatType eq 'oneOnOne'" -All -ErrorAction Stop
+        foreach ($chat in $chats) {
+            $members = Get-MgChatMember -ChatId $chat.Id -ErrorAction SilentlyContinue
+            $userIds = $members | Where-Object { $_.'@odata.type' -eq '#microsoft.graph.aadUserConversationMember' } | ForEach-Object { $_.UserId }
+            if ($userIds -contains $UserId) {
+                $chatId = $chat.Id
+                Write-Host "Found existing chatId: $chatId" -ForegroundColor Green
+                $Cache[$UserId] = $chatId
+                Save-Cache -Cache $Cache -Path $CachePath
+                return $chatId
+            }
+        }
+    } catch {
+        Write-Warning "Failed to search for existing chats: $($_.Exception.Message)"
+    }
+
+    # Last resort: try creating without bot
+    Write-Host "Creating one-on-one chat with userId $UserId..." -ForegroundColor Cyan
+    try {
+        $member = @{
+            "@odata.type"    = "#microsoft.graph.aadUserConversationMember"
+            roles            = @("owner")
+            "user@odata.bind"= "https://graph.microsoft.com/v1.0/users('$UserId')"
+        }
+
         $chat = New-MgChat -ChatType oneOnOne -Members @($member) -ErrorAction Stop
         $chatId = $chat.Id
         Write-Host "Created chatId: $chatId" -ForegroundColor Green
@@ -209,7 +337,7 @@ function Get-OrCreateOneOnOneChat {
         Save-Cache -Cache $Cache -Path $CachePath
         return $chatId
     } catch {
-        throw "Failed to create one-on-one chat. Confirm Chat.Create and Chat.ReadWrite app permissions have admin consent. Details: $($_.Exception.Message)"
+        throw "Failed to create one-on-one chat. Provide -TeamsAppId and -BotId parameters to use bot-based chat creation. Details: $($_.Exception.Message)"
     }
 }
 
@@ -256,7 +384,7 @@ function Get-CardContent {
                         @{ title = "Triggered by"; value = "Automation Service" }
                     )
                 }
-            ),
+            )
             actions = @(
                 @{
                     type = "Action.OpenUrl"
@@ -274,29 +402,96 @@ function Get-CardContent {
 function Send-AdaptiveCardToChat {
     param(
         [string]$ChatId,
-        [object]$CardContent
+        [object]$CardContent,
+        [string]$UserId,
+        [string]$TeamsAppId
     )
 
-    # Minimal message body (required; card goes as attachment)
+    # When sending to bot chats with app-only auth, we need to use migration mode
+    # This requires Teamwork.Migrate.All permission and specific fields
+    
+    # Get current timestamp in ISO 8601 format
+    $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+    
+    # Convert the adaptive card content to JSON string and ensure it's a plain string
+    $cardContentJson = ($CardContent | ConvertTo-Json -Depth 10 -Compress).ToString()
+    
     $body = @{
-        ContentType = "html"
-        Content     = " "
+        createdDateTime = $timestamp
+        from = @{
+            user = @{
+                id = $UserId
+                displayName = "Notification"
+                userIdentityType = "aadUser"
+            }
+        }
+        body = @{
+            contentType = "html"
+            content     = '<attachment id="1"></attachment>'
+        }
+        attachments = @(
+            @{
+                id          = "1"
+                contentType = "application/vnd.microsoft.card.adaptive"
+                contentUrl  = $null
+                content     = $cardContentJson
+                name        = $null
+            }
+        )
     }
 
-    # Attachment: Adaptive Card
-    $attachment = @{
-        id          = "1"
-        contentType = "application/vnd.microsoft.card.adaptive"
-        content     = $CardContent
-        name        = "card"
-    }
-
-    try {
-        Write-Host "Sending Adaptive Card to chatId $ChatId..." -ForegroundColor Cyan
-        New-MgChatMessage -ChatId $ChatId -Body $body -Attachments @($attachment) -ErrorAction Stop | Out-Null
-        Write-Host "Card sent successfully." -ForegroundColor Green
-    } catch {
-        throw "Failed to send message. Confirm ChatMessage.Send permission and consent. Details: $($_.Exception.Message)"
+    $maxRetries = 3
+    $retryCount = 0
+    $success = $false
+    
+    while (-not $success -and $retryCount -lt $maxRetries) {
+        try {
+            if ($retryCount -gt 0) {
+                $waitTime = [Math]::Pow(2, $retryCount)
+                Write-Host "Retry attempt $retryCount after $waitTime seconds..." -ForegroundColor Yellow
+                Start-Sleep -Seconds $waitTime
+            }
+            
+            Write-Host "Sending Adaptive Card to chatId $ChatId..." -ForegroundColor Cyan
+            
+            # Convert to JSON manually to ensure proper serialization
+            $bodyJson = $body | ConvertTo-Json -Depth 10
+            
+            Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/chats/$ChatId/messages" -Body $bodyJson -ErrorAction Stop | Out-Null
+            Write-Host "Card sent successfully." -ForegroundColor Green
+            $success = $true
+        } catch {
+            $retryCount++
+            $errorDetails = $_.Exception.Message
+            
+            # Check if it's a retryable error (502, 503, 504)
+            $isRetryable = $errorDetails -match "(BadGateway|ServiceUnavailable|GatewayTimeout|502|503|504)"
+            
+            # Try to extract more details from the error
+            if ($_.ErrorDetails) {
+                $errorDetails += "`nError Details: $($_.ErrorDetails.Message)"
+            }
+            
+            if ($_.Exception.Response) {
+                try {
+                    $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                    $responseBody = $reader.ReadToEnd()
+                    $errorDetails += "`nResponse Body: $responseBody"
+                } catch {
+                    # Ignore if we can't read the response
+                }
+            }
+            
+            if (-not $isRetryable -or $retryCount -ge $maxRetries) {
+                # Show the request body for debugging on final failure
+                Write-Host "`nRequest Body sent:" -ForegroundColor Yellow
+                Write-Host $bodyJson -ForegroundColor Gray
+                
+                throw "Failed to send message after $retryCount attempts. Confirm Chat.ReadWrite.All and Teamwork.Migrate.All permissions are granted with admin consent. Details: $errorDetails"
+            } else {
+                Write-Warning "Retryable error encountered: $($_.Exception.Message)"
+            }
+        }
     }
 }
 
@@ -305,14 +500,16 @@ function Send-CardToUser {
         [string]$Upn,
         [hashtable]$Cache,
         [string]$CachePath,
-        [object]$CardContent
+        [object]$CardContent,
+        [string]$TeamsAppId,
+        [string]$BotId
     )
 
     try {
         Write-Host "`n--- Processing user: $Upn ---" -ForegroundColor Yellow
         $user   = Get-UserByUpn -Upn $Upn
-        $chatId = Get-OrCreateOneOnOneChat -UserId $user.Id -Cache $Cache -CachePath $CachePath
-        Send-AdaptiveCardToChat -ChatId $chatId -CardContent $CardContent
+        $chatId = Get-OrCreateOneOnOneChat -UserId $user.Id -Cache $Cache -CachePath $CachePath -TeamsAppId $TeamsAppId -BotId $BotId
+        Send-AdaptiveCardToChat -ChatId $chatId -CardContent $CardContent -UserId $user.Id -TeamsAppId $TeamsAppId
         return @{ Success = $true; Upn = $Upn; Error = $null }
     } catch {
         Write-Warning "Failed to send card to $Upn`: $($_.Exception.Message)"
@@ -348,10 +545,18 @@ try {
         $upnList = @($TargetUpn)
     }
 
+    # Validate bot parameters
+    if ($TeamsAppId -and -not $BotId) {
+        throw "BotId is required when TeamsAppId is specified."
+    }
+    if ($BotId -and -not $TeamsAppId) {
+        throw "TeamsAppId is required when BotId is specified."
+    }
+
     # Process each user
     $results = @()
     foreach ($upn in $upnList) {
-        $result = Send-CardToUser -Upn $upn -Cache $cache -CachePath $CachePath -CardContent $card
+        $result = Send-CardToUser -Upn $upn -Cache $cache -CachePath $CachePath -CardContent $card -TeamsAppId $TeamsAppId -BotId $BotId
         $results += $result
     }
 

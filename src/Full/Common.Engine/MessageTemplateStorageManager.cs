@@ -25,6 +25,14 @@ public class MessageTemplateStorageManager : TableStorageManager
         _logger = logger;
     }
 
+    /// <summary>
+    /// Get a table client for direct queries (exposed for services that need direct table access)
+    /// </summary>
+    public async Task<TableClient> GetTableClient(string tableName)
+    {
+        return await base.GetTableClient(tableName);
+    }
+
     #region Template Management
 
     /// <summary>
@@ -231,6 +239,33 @@ public class MessageTemplateStorageManager : TableStorageManager
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Delete a batch and all its associated message logs
+    /// </summary>
+    public async Task DeleteBatch(string batchId)
+    {
+        var batch = await GetBatch(batchId);
+        if (batch == null)
+        {
+            throw new InvalidOperationException($"Batch {batchId} not found");
+        }
+
+        // Delete all message logs associated with this batch
+        var logs = await GetMessageLogsByBatch(batchId);
+        var logsTableClient = await GetTableClient(LOGS_TABLE_NAME);
+        
+        foreach (var log in logs)
+        {
+            await logsTableClient.DeleteEntityAsync(MessageLogTableEntity.PartitionKeyVal, log.RowKey);
+        }
+
+        // Delete the batch
+        var batchesTableClient = await GetTableClient(BATCHES_TABLE_NAME);
+        await batchesTableClient.DeleteEntityAsync(MessageBatchTableEntity.PartitionKeyVal, batchId);
+
+        _logger.LogInformation($"Deleted batch {batchId} and {logs.Count} associated message logs");
     }
 
     #endregion

@@ -16,14 +16,22 @@ import {
     TableCellLayout,
     Badge,
     ProgressBar,
-    InfoLabel,
+    Dialog,
+    DialogTrigger,
+    DialogSurface,
+    DialogTitle,
+    DialogBody,
+    DialogActions,
+    DialogContent,
 } from '@fluentui/react-components';
 import {
     ArrowLeft20Regular,
     Checkmark20Regular,
     Dismiss20Regular,
     Clock20Regular,
-    Queue20Regular,
+    TextBulletListSquare20Regular,
+    Copy20Regular,
+    Delete20Regular,
 } from '@fluentui/react-icons';
 import { useParams, useHistory } from 'react-router-dom';
 import { BaseAxiosApiLoader } from '../../api/AxiosApiLoader';
@@ -32,6 +40,7 @@ import {
     getMessageLogsByBatch,
     getTemplate,
     getQueueStatus,
+    deleteBatch,
 } from '../../api/ApiCalls';
 import { MessageBatchDto, MessageLogDto, MessageTemplateDto, QueueStatusDto } from '../../apimodels/Models';
 
@@ -99,6 +108,11 @@ const useStyles = makeStyles({
         fontSize: '24px',
         color: tokens.colorBrandForeground1,
     },
+    actionButtons: {
+        display: 'flex',
+        gap: tokens.spacingHorizontalS,
+        marginTop: tokens.spacingVerticalM,
+    },
 });
 
 interface BatchProgressPageProps {
@@ -121,6 +135,9 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [autoRefresh, setAutoRefresh] = useState(true);
+    const [copying, setCopying] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     useEffect(() => {
         if (batchId && loader) {
@@ -178,6 +195,49 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
             if (!silent) {
                 setLoading(false);
             }
+        }
+    };
+
+    const handleCopyBatch = () => {
+        if (!batch || !logs) return;
+
+        setCopying(true);
+        try {
+            const recipients = logs
+                .map(log => log.recipientUpn)
+                .filter((upn): upn is string => upn !== undefined && upn !== null);
+
+            // Navigate to SendNudge page with pre-populated data
+            history.push('/sendnudge', {
+                copyFromBatch: {
+                    batchName: `${batch.batchName} (Copy)`,
+                    templateId: batch.templateId,
+                    recipientUpns: recipients,
+                },
+            });
+        } catch (err: any) {
+            setError(err.message || 'Failed to copy batch');
+            console.error('Error copying batch:', err);
+            setCopying(false);
+        }
+    };
+
+    const handleDeleteBatch = async () => {
+        if (!loader || !batch) return;
+        
+        try {
+            setDeleting(true);
+            setError(null);
+
+            await deleteBatch(loader, batch.id);
+            
+            // Redirect to batch history after deletion
+            history.push('/history');
+        } catch (err: any) {
+            setError(err.message || 'Failed to delete batch');
+            console.error('Error deleting batch:', err);
+            setDeleting(false);
+            setShowDeleteDialog(false);
         }
     };
 
@@ -282,9 +342,52 @@ export const BatchProgressPage: React.FC<BatchProgressPageProps> = ({ loader }) 
                     </Text>
                 </div>
 
+                <div className={styles.actionButtons}>
+                    <Button
+                        appearance="subtle"
+                        icon={<Copy20Regular />}
+                        onClick={handleCopyBatch}
+                        disabled={copying || deleting}
+                    >
+                        {copying ? 'Copying...' : 'Copy Batch Configuration'}
+                    </Button>
+                    <Dialog open={showDeleteDialog} onOpenChange={(_, data) => setShowDeleteDialog(data.open)}>
+                        <DialogTrigger disableButtonEnhancement>
+                            <Button
+                                appearance="subtle"
+                                icon={<Delete20Regular />}
+                                disabled={deleting}
+                            >
+                                Delete Batch
+                            </Button>
+                        </DialogTrigger>
+                        <DialogSurface>
+                            <DialogBody>
+                                <DialogTitle>Delete Batch</DialogTitle>
+                                <DialogContent>
+                                    Are you sure you want to delete the batch "{batch.batchName}"? 
+                                    This will also delete all associated message logs. This action cannot be undone.
+                                </DialogContent>
+                                <DialogActions>
+                                    <DialogTrigger disableButtonEnhancement>
+                                        <Button appearance="secondary">Cancel</Button>
+                                    </DialogTrigger>
+                                    <Button 
+                                        appearance="primary" 
+                                        onClick={handleDeleteBatch}
+                                        disabled={deleting}
+                                    >
+                                        {deleting ? 'Deleting...' : 'Delete'}
+                                    </Button>
+                                </DialogActions>
+                            </DialogBody>
+                        </DialogSurface>
+                    </Dialog>
+                </div>
+
                 {queueStatus && queueStatus.queueLength > 0 && (
                     <div className={styles.queueStatus}>
-                        <Queue20Regular className={styles.queueIcon} />
+                        <TextBulletListSquare20Regular className={styles.queueIcon} />
                         <div>
                             <Text weight="semibold" size={300}>
                                 {queueStatus.queueLength} message{queueStatus.queueLength !== 1 ? 's' : ''} in queue

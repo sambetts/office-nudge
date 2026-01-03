@@ -1,60 +1,72 @@
+using Common.Engine.Notifications;
 using Common.Engine.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Common.Engine.Services;
 
 /// <summary>
-/// Service responsible for sending messages to recipients (mocked for now)
+/// Service responsible for sending messages to recipients
 /// </summary>
-public class MessageSenderService
+public class MessageSenderService(IBotConvoResumeManager botConvoResumeManager, IServiceProvider serviceProvider, ILogger<MessageSenderService> logger)
 {
-    private readonly MessageTemplateService _templateService;
-    private readonly ILogger<MessageSenderService> _logger;
-
-    public MessageSenderService(MessageTemplateService templateService, ILogger<MessageSenderService> logger)
-    {
-        _templateService = templateService;
-        _logger = logger;
-    }
 
     /// <summary>
-    /// Send a message to a recipient (mocked - always succeeds)
+    /// Send a message to a recipient
     /// </summary>
     public async Task<MessageSendResult> SendMessageAsync(BatchQueueMessage queueMessage)
     {
         try
         {
-            _logger.LogInformation($"Processing message for recipient {queueMessage.RecipientUpn} in batch {queueMessage.BatchId}");
+            logger.LogInformation($"Processing message for recipient {queueMessage.RecipientUpn} in batch {queueMessage.BatchId}");
 
-            // Mock: Simulate message sending
-            // In a real implementation, this would:
-            // 1. Load the template from blob storage
-            // 2. Personalize the message for the recipient
-            // 3. Send via Teams Bot API or other channel
-            // 4. Handle errors and retries
+            // Send message via bot conversation
+            var resumeResult = await botConvoResumeManager.ResumeConversation(queueMessage.RecipientUpn);
 
-            // Simulate some processing time
-            await Task.Delay(100);
+            // Create a scope to resolve scoped MessageTemplateService
+            using var scope = serviceProvider.CreateScope();
+            var templateService = scope.ServiceProvider.GetRequiredService<MessageTemplateService>();
 
-            // Mock: Always succeed for now
-            _logger.LogInformation($"Successfully sent message to {queueMessage.RecipientUpn}");
-
-            // Update the message log status to Success
-            await _templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Success");
-
-            return new MessageSendResult
+            if (resumeResult.Success)
             {
-                Success = true,
-                MessageLogId = queueMessage.MessageLogId,
-                RecipientUpn = queueMessage.RecipientUpn
-            };
+                logger.LogInformation($"Successfully sent message to {queueMessage.RecipientUpn}: {resumeResult.Message}");
+
+                // Update the message log status to Success
+                await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Success");
+
+                return new MessageSendResult
+                {
+                    Success = true,
+                    MessageLogId = queueMessage.MessageLogId,
+                    RecipientUpn = queueMessage.RecipientUpn
+                };
+            }
+            else
+            {
+                logger.LogWarning($"Failed to send message to {queueMessage.RecipientUpn}: {resumeResult.Message}");
+
+                // Update the message log status to Failed
+                await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Failed", resumeResult.Message);
+
+                return new MessageSendResult
+                {
+                    Success = false,
+                    MessageLogId = queueMessage.MessageLogId,
+                    RecipientUpn = queueMessage.RecipientUpn,
+                    ErrorMessage = resumeResult.Message
+                };
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error sending message to {queueMessage.RecipientUpn}");
+            logger.LogError(ex, $"Error sending message to {queueMessage.RecipientUpn}");
+
+            // Create a scope to resolve scoped MessageTemplateService for error handling
+            using var scope = serviceProvider.CreateScope();
+            var templateService = scope.ServiceProvider.GetRequiredService<MessageTemplateService>();
 
             // Update the message log status to Failed
-            await _templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Failed", ex.Message);
+            await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Failed", ex.Message);
 
             return new MessageSendResult
             {

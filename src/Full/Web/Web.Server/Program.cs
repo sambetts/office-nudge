@@ -1,5 +1,6 @@
 using Common.Engine;
 using Common.Engine.Notifications;
+using Common.Engine.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Bot.Builder;
 using Microsoft.Identity.Web;
@@ -57,8 +58,8 @@ public class Program
         // Create the Conversation state. (Used by the Dialog system itself.)
         builder.Services.AddSingleton<ConversationState>();
 
-        // Register conversation resume handler
-        builder.Services.AddSingleton<IConversationResumeHandler<string>, DefaultConversationResumeHandler>();
+        // Register conversation resume handler - using PendingCardConversationResumeHandler to send pending cards
+        builder.Services.AddScoped<IConversationResumeHandler<PendingCardInfo>, PendingCardConversationResumeHandler>();
 
         // Bot diags
         builder.Services.AddSingleton<MainDialogue>();

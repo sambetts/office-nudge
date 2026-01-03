@@ -5,22 +5,12 @@ import {
     CardHeader,
     Input,
     Label,
-    Textarea,
     Spinner,
     Text,
     makeStyles,
     tokens,
     Dropdown,
     Option,
-    Table,
-    TableBody,
-    TableCell,
-    TableRow,
-    TableHeader,
-    TableHeaderCell,
-    TableCellLayout,
-    Badge,
-    Link,
 } from '@fluentui/react-components';
 import {
     DocumentAdd20Regular,
@@ -28,8 +18,9 @@ import {
     Send20Regular,
     AddCircle20Regular,
     ArrowRight20Regular,
+    Info20Regular,
 } from '@fluentui/react-icons';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { BaseAxiosApiLoader } from '../../api/AxiosApiLoader';
 import {
     getAllTemplates,
@@ -111,15 +102,33 @@ const useStyles = makeStyles({
         borderRadius: tokens.borderRadiusMedium,
         marginTop: tokens.spacingVerticalM,
     },
+    infoCard: {
+        padding: tokens.spacingVerticalM,
+        backgroundColor: tokens.colorBrandBackground2,
+        borderRadius: tokens.borderRadiusMedium,
+        marginBottom: tokens.spacingVerticalL,
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalS,
+    },
 });
 
 interface SendNudgePageProps {
     loader?: BaseAxiosApiLoader;
 }
 
+interface LocationState {
+    copyFromBatch?: {
+        batchName: string;
+        templateId: string;
+        recipientUpns: string[];
+    };
+}
+
 export const SendNudgePage: React.FC<SendNudgePageProps> = ({ loader }) => {
     const styles = useStyles();
     const history = useHistory();
+    const location = useLocation<LocationState>();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [templates, setTemplates] = useState<MessageTemplateDto[]>([]);
@@ -135,10 +144,25 @@ export const SendNudgePage: React.FC<SendNudgePageProps> = ({ loader }) => {
     const [newUpn, setNewUpn] = useState('');
     const [uploadedFileName, setUploadedFileName] = useState<string>('');
     const [sending, setSending] = useState(false);
+    const [isCopiedBatch, setIsCopiedBatch] = useState(false);
 
     useEffect(() => {
         loadTemplates();
     }, [loader]);
+
+    useEffect(() => {
+        // Check if we're copying from an existing batch
+        if (location.state?.copyFromBatch) {
+            const { batchName: copiedBatchName, templateId, recipientUpns: copiedRecipients } = location.state.copyFromBatch;
+            setBatchName(copiedBatchName);
+            setSelectedTemplateId(templateId);
+            setRecipientUpns(copiedRecipients);
+            setIsCopiedBatch(true);
+            
+            // Clear the location state to prevent re-populating on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     const loadTemplates = async () => {
         if (!loader) return;
@@ -168,6 +192,7 @@ export const SendNudgePage: React.FC<SendNudgePageProps> = ({ loader }) => {
             setUploadedFileName(file.name);
             setSuccess(`Loaded ${response.upns.length} recipients from ${file.name}`);
             setCreatedBatchId(null);
+            setIsCopiedBatch(false);
         } catch (err: any) {
             setError(err.message || 'Failed to parse file');
             console.error('Error parsing file:', err);
@@ -237,6 +262,7 @@ export const SendNudgePage: React.FC<SendNudgePageProps> = ({ loader }) => {
             setSelectedTemplateId('');
             setRecipientUpns([]);
             setUploadedFileName('');
+            setIsCopiedBatch(false);
         } catch (err: any) {
             setError(err.message || 'Failed to send nudges');
             console.error('Error sending nudges:', err);
@@ -269,6 +295,15 @@ export const SendNudgePage: React.FC<SendNudgePageProps> = ({ loader }) => {
                 <h1>Send Nudge</h1>
                 <Text>Select a template and add recipients to send nudge messages</Text>
             </div>
+
+            {isCopiedBatch && (
+                <div className={styles.infoCard}>
+                    <Info20Regular />
+                    <Text>
+                        You're creating a new batch from an existing batch. The template and recipients have been pre-populated. You can modify them before sending.
+                    </Text>
+                </div>
+            )}
 
             {error && <div className={styles.error}>{error}</div>}
             

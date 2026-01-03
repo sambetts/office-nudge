@@ -3,27 +3,27 @@
     "version": "1.0.0",
     "manifestVersion": "1.16",
     "id": "<<BOT_APP_ID>>",
-    "packageName": "com.copilotfeedback.bot",
+    "packageName": "com.officenudge.bot",
     "name": {
-        "short": "Copilot Feedback bot",
-        "full": "Copilot Feedback bot - get real value feedback for copilot usage"
+        "short": "Office Nudge Bot",
+        "full": "Office Nudge Bot - get tips about copilot usage"
     },
     "developer": {
         "name": "Sam Betts",
         "mpnId": "",
-        "websiteUrl": "https://github.com/pnp/copilot-feedback-bot",
-        "privacyUrl": "https://github.com/pnp/copilot-feedback-bot",
-        "termsOfUseUrl": "https://github.com/pnp/copilot-feedback-bot"
+        "websiteUrl": "https://github.com/sambetts/office-nudge",
+        "privacyUrl": "https://github.com/sambetts/office-nudge",
+        "termsOfUseUrl": "https://github.com/sambetts/office-nudge"
     },
     "description": {
-        "short": "Copilot Feedback bot - get real value feedback for copilot usage",
-        "full": "Copilot Feedback bot surveys users how their interactions with M365 Copilot was to compile full and realistic value stats"
+        "short": "Office Nudge Bot - get tips about copilot usage",
+        "full": "Office Nudge Bot sends you helpful tips and tricks to get the most out of Microsoft Copilot in Office apps."
     },
     "icons": {
         "outline": "outline.png",
         "color": "color.png"
     },
-    "accentColor": "#335484",
+    "accentColor": "#00B7C3",
     "bots": [
         {
             "botId": "<<BOT_APP_ID>>",
