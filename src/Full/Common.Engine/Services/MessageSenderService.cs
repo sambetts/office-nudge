@@ -27,34 +27,47 @@ public class MessageSenderService(IBotConvoResumeManager botConvoResumeManager, 
             using var scope = serviceProvider.CreateScope();
             var templateService = scope.ServiceProvider.GetRequiredService<MessageTemplateService>();
 
-            if (resumeResult.Success)
+            switch (resumeResult.Status)
             {
-                logger.LogInformation($"Successfully sent message to {queueMessage.RecipientUpn}: {resumeResult.Message}");
+                case ConversationResumeStatus.MessageSent:
+                    logger.LogInformation($"Successfully sent message to {queueMessage.RecipientUpn}: {resumeResult.Message}");
 
-                // Update the message log status to Success
-                await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Success");
+                    // Update the message log status to Success
+                    await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Success");
 
-                return new MessageSendResult
-                {
-                    Success = true,
-                    MessageLogId = queueMessage.MessageLogId,
-                    RecipientUpn = queueMessage.RecipientUpn
-                };
-            }
-            else
-            {
-                logger.LogWarning($"Failed to send message to {queueMessage.RecipientUpn}: {resumeResult.Message}");
+                    return new MessageSendResult
+                    {
+                        Success = true,
+                        MessageLogId = queueMessage.MessageLogId,
+                        RecipientUpn = queueMessage.RecipientUpn
+                    };
 
-                // Update the message log status to Failed
-                await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Failed", resumeResult.Message);
+                case ConversationResumeStatus.AppInstalledPending:
+                    logger.LogInformation($"Bot app installed for {queueMessage.RecipientUpn}. Message will be sent when user opens Teams.");
+                    
+                    // Keep status as Pending - don't update it. Message will be sent when user opens Teams.
+                    // The TeamsBot will handle sending the pending card via the conversation resume handler.
+                    return new MessageSendResult
+                    {
+                        Success = true, // Consider this successful - the app was installed and message is queued
+                        MessageLogId = queueMessage.MessageLogId,
+                        RecipientUpn = queueMessage.RecipientUpn
+                    };
 
-                return new MessageSendResult
-                {
-                    Success = false,
-                    MessageLogId = queueMessage.MessageLogId,
-                    RecipientUpn = queueMessage.RecipientUpn,
-                    ErrorMessage = resumeResult.Message
-                };
+                case ConversationResumeStatus.Failed:
+                default:
+                    logger.LogWarning($"Failed to send message to {queueMessage.RecipientUpn}: {resumeResult.Message}");
+
+                    // Update the message log status to Failed
+                    await templateService.UpdateMessageLogStatus(queueMessage.MessageLogId, "Failed", resumeResult.Message);
+
+                    return new MessageSendResult
+                    {
+                        Success = false,
+                        MessageLogId = queueMessage.MessageLogId,
+                        RecipientUpn = queueMessage.RecipientUpn,
+                        ErrorMessage = resumeResult.Message
+                    };
             }
         }
         catch (Exception ex)

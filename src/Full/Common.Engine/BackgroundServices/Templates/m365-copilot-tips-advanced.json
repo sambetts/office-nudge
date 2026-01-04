@@ -1,0 +1,91 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Microsoft 365 Copilot tips (Advanced)",
+      "size": "Large",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Get leverage from your Microsoft 365 content: ask Copilot to compare, extract, and turn info into actions.",
+      "isSubtle": true,
+      "spacing": "Small",
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Power moves",
+          "weight": "Bolder",
+          "wrap": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Meetings (Teams)",
+              "value": "\"Create a recap with decisions, owners, due dates, and open questions.\""
+            },
+            {
+              "title": "Email triage (Outlook)",
+              "value": "\"Draft 3 replies: approve, decline, delegate. Keep each under 4 lines.\""
+            },
+            {
+              "title": "Doc intelligence (Word)",
+              "value": "\"Compare v1 vs v2. Summarize what changed and why it matters.\""
+            },
+            {
+              "title": "Analysis (Excel)",
+              "value": "\"Find anomalies, explain drivers, and propose experiments to confirm.\""
+            },
+            {
+              "title": "Storytelling (PowerPoint)",
+              "value": "\"Turn this doc into a narrative: problem \u2192 insight \u2192 recommendation \u2192 next steps.\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "Make it enterprise-ready",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "• Ask for sources: \"Cite the sections you used.\"\n• Ask for a QA pass: \"Check for missing stakeholders, policy risks, and sensitive info.\"\n• Ask for outputs you can paste: \"Give a table of actions with owner/date.\"",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Tip: the best results come from the right file + the right ask. Name the doc, range, or meeting explicitly.",
+      "isSubtle": true,
+      "spacing": "Small",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Copilot overview",
+      "url": "https://www.microsoft.com/microsoft-365/copilot"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Copilot help",
+      "url": "https://support.microsoft.com/copilot"
+    }
+  ]
+}

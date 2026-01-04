@@ -38,6 +38,9 @@ public static class MessageTemplateServiceExtensions
         // Register background processor
         services.AddHostedService<BatchMessageProcessorService>();
 
+        // Register default template initialization service
+        services.AddHostedService<DefaultTemplateInitializationService>();
+
         services.AddScoped<MessageTemplateService>();
 
         // Register pending card lookup service

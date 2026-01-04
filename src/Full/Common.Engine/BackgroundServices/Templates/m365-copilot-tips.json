@@ -1,0 +1,91 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Microsoft 365 Copilot tips (Beginner)",
+      "size": "Large",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Use Copilot where work already lives: email, docs, meetings, and files. Ask for a first draft - then refine.",
+      "isSubtle": true,
+      "spacing": "Small",
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Fast wins (copy/paste these)",
+          "weight": "Bolder",
+          "wrap": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Outlook",
+              "value": "\"Draft a friendly reply. Confirm the date and ask for agenda items.\""
+            },
+            {
+              "title": "Teams",
+              "value": "\"Summarize this chat: decisions, risks, and next steps.\""
+            },
+            {
+              "title": "Word",
+              "value": "\"Turn these notes into a 1-page brief with headings and bullets.\""
+            },
+            {
+              "title": "PowerPoint",
+              "value": "\"Create 6 slides from this outline. Add speaker notes.\""
+            },
+            {
+              "title": "Excel",
+              "value": "\"Explain what's driving the dip in sales and suggest 3 actions.\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "How to get better results",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "• Name the file/thread/meeting you mean.\n• Specify tone (\"executive\", \"friendly\", \"direct\").\n• Ask for *options*: \"Give 2 versions\u2014short and detailed.\"\n• Finish with a check: \"What are the assumptions?\"",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Reminder: always review before sending - you're the decision-maker.",
+      "isSubtle": true,
+      "spacing": "Small",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Copilot help",
+      "url": "https://support.microsoft.com/copilot"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "See advanced tips",
+      "url": "https://www.microsoft.com/microsoft-365/copilot"
+    }
+  ]
+}

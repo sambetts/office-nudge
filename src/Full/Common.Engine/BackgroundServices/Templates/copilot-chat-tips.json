@@ -1,0 +1,108 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Copilot Chat tips (Beginner)",
+      "size": "Large",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Turn \"I'm stuck\" into momentum. Start with one small, clear ask - then iterate.",
+      "isSubtle": true,
+      "spacing": "Small",
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "A great prompt has 4 parts",
+          "weight": "Bolder",
+          "wrap": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Goal",
+              "value": "What are you trying to achieve?"
+            },
+            {
+              "title": "Context",
+              "value": "Paste the relevant snippet, error, or constraints."
+            },
+            {
+              "title": "Output format",
+              "value": "Bullets, steps, code, table - be explicit."
+            },
+            {
+              "title": "Quality bar",
+              "value": "Performance, security, accessibility, tone, etc."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "Try these starter prompts",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        {
+          "title": "Explain",
+          "value": "\"Explain async/await in C# with a tiny example and common gotchas.\""
+        },
+        {
+          "title": "Debug",
+          "value": "\"Here's the error + stack trace. Suggest likely root causes and next checks.\""
+        },
+        {
+          "title": "Draft",
+          "value": "\"Write a polite update asking for approval. Keep it under 70 words.\""
+        },
+        {
+          "title": "Summarize",
+          "value": "\"Summarize this thread into: decision, owners, next steps.\""
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "Quick habits",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "• Ask for *2 options* (fast vs. robust).\n• Say what you\u2019ve already tried.\n• If the answer is close, ask: \"Improve this\u2014make it safer, simpler, and add tests.\"",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Prompting basics",
+      "url": "https://support.microsoft.com/en-us/topic/how-to-use-copilot-in-microsoft-365-apps-9b0e4e1a-2c38-4c07-8b66-919a3f2e2a48"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "See advanced tips",
+      "url": "https://aka.ms/copilot"
+    }
+  ]
+}

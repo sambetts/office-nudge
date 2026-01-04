@@ -81,6 +81,20 @@ public class Program
         {
             await botCache.RemoveFromCache(user.RowKey);
         }
+
+        // Delete template cards from storage using MessageTemplateService. This way we can re-create them fresh on each run for debugging.
+        // Create a scope to resolve scoped services
+        using (var scope = app.Services.CreateScope())
+        {
+            var messageTemplateService = scope.ServiceProvider.GetRequiredService<MessageTemplateService>();
+            var allTemplates = await messageTemplateService.GetAllTemplates();
+            foreach (var template in allTemplates)
+            {
+                await messageTemplateService.DeleteTemplate(template.Id);
+            }
+        }
+
+        // They'll be re-created automatically.
 #endif
 
         // https://learn.microsoft.com/en-us/visualstudio/javascript/tutorial-asp-net-core-with-react?view=vs-2022#publish-the-project

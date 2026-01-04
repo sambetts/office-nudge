@@ -10,6 +10,7 @@ namespace Web.Server.Bots;
 /// </summary>
 public class PendingCardConversationResumeHandler(
     PendingCardLookupService pendingCardLookupService,
+    MessageTemplateService messageTemplateService,
     ILogger<PendingCardConversationResumeHandler> logger) : IConversationResumeHandler<PendingCardInfo>
 {
     public async Task<(PendingCardInfo?, Attachment)> LoadDataAndResumeConversation(string chatUserUpn)
@@ -21,6 +22,11 @@ public class PendingCardConversationResumeHandler(
         if (pendingCard != null)
         {
             logger.LogInformation($"Found pending card '{pendingCard.TemplateName}' for user {chatUserUpn}");
+            
+            // Update the message log status to Success since we're about to send it
+            await messageTemplateService.UpdateMessageLogStatus(pendingCard.MessageLogId, "Success");
+            logger.LogInformation($"Updated message log {pendingCard.MessageLogId} to Success status");
+            
             return (pendingCard, pendingCard.CardAttachment);
         }
         else

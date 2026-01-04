@@ -5,10 +5,14 @@
 </PropertyGroup>
 
 <ItemGroup>
-    <EmbeddedResource Include="Bot\Cards\Templates\BotDiagFinished.json" />
-    <EmbeddedResource Include="Bot\Cards\Templates\BotFirstIntro.json" />
-    <EmbeddedResource Include="Bot\Cards\Templates\BotResumeConversationIntro.json" />
-  </ItemGroup>
+  <EmbeddedResource Include="Bot\Cards\Templates\BotDiagFinished.json" />
+  <EmbeddedResource Include="Bot\Cards\Templates\BotFirstIntro.json" />
+  <EmbeddedResource Include="Bot\Cards\Templates\BotResumeConversationIntro.json" />
+  <EmbeddedResource Include="BackgroundServices\Templates\copilot-chat-tips.json" />
+  <EmbeddedResource Include="BackgroundServices\Templates\m365-copilot-tips.json" />
+		<EmbeddedResource Include="BackgroundServices\Templates\copilot-chat-tips-advanced.json" />
+		<EmbeddedResource Include="BackgroundServices\Templates\m365-copilot-tips-advanced.json" />
+</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />

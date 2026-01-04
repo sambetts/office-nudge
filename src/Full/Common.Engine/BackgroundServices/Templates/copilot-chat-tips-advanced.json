@@ -1,0 +1,108 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Copilot Chat tips (Advanced)",
+      "size": "Large",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Use Copilot Chat like a teammate: give it a role, constraints, and a way to verify the answer.",
+      "isSubtle": true,
+      "spacing": "Small",
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Upgrade your prompts",
+          "weight": "Bolder",
+          "wrap": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Role",
+              "value": "\"Act as a tech lead / editor / analyst...\""
+            },
+            {
+              "title": "Constraints",
+              "value": "\"Must be accessible, secure, and under 200 lines...\""
+            },
+            {
+              "title": "Trade-offs",
+              "value": "\"Give a fast approach and a robust approach, with pros/cons.\""
+            },
+            {
+              "title": "Verification",
+              "value": "\"List assumptions + how to test/validate each.\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "High-leverage workflows",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        {
+          "title": "Decision helper",
+          "value": "\"I have 3 options. Create a decision matrix with risks and recommendation.\""
+        },
+        {
+          "title": "Rewrite with intent",
+          "value": "\"Rewrite this for: exec summary, then detailed plan. Keep facts unchanged.\""
+        },
+        {
+          "title": "Plan + checklist",
+          "value": "\"Break this into milestones with acceptance criteria and test strategy.\""
+        },
+        {
+          "title": "Quality pass",
+          "value": "\"Review this text/code for security, privacy, and edge cases. Suggest fixes.\""
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "Pro move",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Ask for a *short answer first*, then \"expand only the section I choose\". It keeps cards (and chats) useful on mobile.",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Adaptive Cards guidelines",
+      "url": "https://adaptivecards.microsoft.com/?topic=design-best-practices"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Copilot learning",
+      "url": "https://support.microsoft.com/copilot"
+    }
+  ]
+}
