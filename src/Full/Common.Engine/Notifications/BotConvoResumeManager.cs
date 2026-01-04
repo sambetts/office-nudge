@@ -128,6 +128,9 @@ public class BotConvoResumeManager(ILogger<BotConvoResumeManager> loggerBotConvo
         var installedApp = await installManager.GetUserInstalledApp(userid, appId);
         try
         {
+            // Calling this will trigger a "conversationUpdate" activity to the bot, assuming the correct callback URL is configured
+            // You need to have either NGROK or a public endpoint for this to work
+            // When the callback is received, the bot should cache the conversation ID for this user, and then send whatever card or message is needed
             var chat = await graphServiceClient.Users[userid].Teamwork.InstalledApps[installedApp.Id].Chat.GetAsync();
         }
         catch (ODataError ex)
