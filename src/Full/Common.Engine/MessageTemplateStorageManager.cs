@@ -25,14 +25,6 @@ public class MessageTemplateStorageManager : TableStorageManager
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get a table client for direct queries (exposed for services that need direct table access)
-    /// </summary>
-    public async Task<TableClient> GetTableClient(string tableName)
-    {
-        return await base.GetTableClient(tableName);
-    }
-
     #region Template Management
 
     /// <summary>

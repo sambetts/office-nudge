@@ -14,7 +14,7 @@ public abstract class TableStorageManager
         _tableServiceClient = new TableServiceClient(storageConnectionString);
     }
 
-    protected async Task<TableClient> GetTableClient(string tableName)
+    public async Task<TableClient> GetTableClient(string tableName)
     {
         if (_tableClientCache.TryGetValue(tableName, out var tableClient))
             return tableClient;

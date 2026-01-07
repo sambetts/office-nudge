@@ -5,7 +5,7 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "Microsoft 365 Copilot tips (Advanced)",
+      "text": "‚ú® Microsoft 365 Copilot tips (Advanced)",
       "size": "Large",
       "weight": "Bolder",
       "wrap": true
@@ -24,7 +24,7 @@
       "items": [
         {
           "type": "TextBlock",
-          "text": "Power moves",
+          "text": "‚ö° Power moves",
           "weight": "Bolder",
           "wrap": true,
           "spacing": "Small"
@@ -58,15 +58,27 @@
     },
     {
       "type": "TextBlock",
-      "text": "Make it enterprise-ready",
+      "text": "üè¢ Make it enterprise-ready",
       "weight": "Bolder",
       "spacing": "Medium",
       "wrap": true
     },
     {
-      "type": "TextBlock",
-      "text": "ï Ask for sources: \"Cite the sections you used.\"\nï Ask for a QA pass: \"Check for missing stakeholders, policy risks, and sensitive info.\"\nï Ask for outputs you can paste: \"Give a table of actions with owner/date.\"",
-      "wrap": true
+      "type": "FactSet",
+      "facts": [
+        {
+          "title": "Cite sources",
+          "value": "\"Quote the email/doc sections you used.\""
+        },
+        {
+          "title": "Policy check",
+          "value": "\"Flag confidential info, compliance risks, and missing approvers.\""
+        },
+        {
+          "title": "Copy-ready output",
+          "value": "\"Give me an action list with owners and dates.\""
+        }
+      ]
     },
     {
       "type": "TextBlock",

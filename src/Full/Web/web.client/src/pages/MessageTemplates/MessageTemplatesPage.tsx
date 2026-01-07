@@ -1,40 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-    Button,
-    Card,
-    CardHeader,
-    Table,
-    TableBody,
-    TableCell,
-    TableRow,
-    TableHeader,
-    TableHeaderCell,
-    TableCellLayout,
-    Dialog,
-    DialogTrigger,
-    DialogSurface,
-    DialogTitle,
-    DialogBody,
-    DialogActions,
-    DialogContent,
-    Input,
-    Label,
-    Textarea,
     Spinner,
     Text,
     makeStyles,
     tokens
 } from '@fluentui/react-components';
-import { Add20Regular, Edit20Regular, Delete20Regular, Eye20Regular } from '@fluentui/react-icons';
 import { BaseAxiosApiLoader } from '../../api/AxiosApiLoader';
+import { MessageTemplateDto } from '../../apimodels/Models';
+import { useTemplates } from './hooks/useTemplates';
 import {
-    getAllTemplates,
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-    getTemplateJson
-} from '../../api/ApiCalls';
-import { MessageTemplateDto, CreateTemplateRequest, UpdateTemplateRequest } from '../../apimodels/Models';
+    TemplateFormDialog,
+    TemplateViewDialog,
+    TemplateDeleteDialog,
+    TemplateTable
+} from './components';
 
 const useStyles = makeStyles({
     container: {
@@ -45,20 +24,6 @@ const useStyles = makeStyles({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: tokens.spacingVerticalL,
-    },
-    card: {
-        marginBottom: tokens.spacingVerticalL,
-    },
-    formField: {
-        marginBottom: tokens.spacingVerticalM,
-    },
-    jsonTextarea: {
-        minHeight: '200px',
-        fontFamily: 'monospace',
-    },
-    actionButtons: {
-        display: 'flex',
-        gap: tokens.spacingHorizontalS,
     },
     error: {
         color: tokens.colorPaletteRedForeground1,
@@ -72,9 +37,15 @@ interface MessageTemplatesPageProps {
 
 export const MessageTemplatesPage: React.FC<MessageTemplatesPageProps> = ({ loader }) => {
     const styles = useStyles();
-    const [templates, setTemplates] = useState<MessageTemplateDto[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const {
+        templates,
+        loading,
+        error,
+        handleCreate,
+        handleUpdate,
+        handleDelete,
+        getJson
+    } = useTemplates(loader);
 
     // Dialog states
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -88,111 +59,91 @@ export const MessageTemplatesPage: React.FC<MessageTemplatesPageProps> = ({ load
     const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplateDto | null>(null);
     const [viewJson, setViewJson] = useState('');
 
-    useEffect(() => {
-        loadTemplates();
-    }, [loader]);
-
-    const loadTemplates = async () => {
-        if (!loader) return;
-
-        try {
-            setLoading(true);
-            setError(null);
-            const data = await getAllTemplates(loader);
-            setTemplates(data);
-        } catch (err: any) {
-            setError(err.message || 'Failed to load templates');
-            console.error('Error loading templates:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCreate = async () => {
-        if (!loader) return;
-
-        try {
-            const request: CreateTemplateRequest = {
-                templateName,
-                jsonPayload
-            };
-            await createTemplate(loader, request);
+    const onCreateSubmit = async () => {
+        const success = await handleCreate(templateName, jsonPayload);
+        if (success) {
             setCreateDialogOpen(false);
             setTemplateName('');
             setJsonPayload('');
-            await loadTemplates();
-        } catch (err: any) {
-            setError(err.message || 'Failed to create template');
-            console.error('Error creating template:', err);
         }
     };
 
-    const handleEdit = async () => {
-        if (!loader || !selectedTemplate) return;
-
-        try {
-            const request: UpdateTemplateRequest = {
-                templateName,
-                jsonPayload
-            };
-            await updateTemplate(loader, selectedTemplate.id, request);
+    const onEditSubmit = async () => {
+        if (!selectedTemplate) return;
+        const success = await handleUpdate(selectedTemplate.id, templateName, jsonPayload);
+        if (success) {
             setEditDialogOpen(false);
             setSelectedTemplate(null);
             setTemplateName('');
             setJsonPayload('');
-            await loadTemplates();
-        } catch (err: any) {
-            setError(err.message || 'Failed to update template');
-            console.error('Error updating template:', err);
         }
     };
 
-    const handleDelete = async () => {
-        if (!loader || !selectedTemplate) return;
-
-        try {
-            await deleteTemplate(loader, selectedTemplate.id);
+    const onDeleteConfirm = async () => {
+        if (!selectedTemplate) return;
+        const success = await handleDelete(selectedTemplate.id);
+        if (success) {
             setDeleteDialogOpen(false);
             setSelectedTemplate(null);
-            await loadTemplates();
-        } catch (err: any) {
-            setError(err.message || 'Failed to delete template');
-            console.error('Error deleting template:', err);
         }
     };
 
-    const handleView = async (template: MessageTemplateDto) => {
-        if (!loader) return;
-
-        try {
-            const response = await getTemplateJson(loader, template.id);
-            setViewJson(response.json);
+    const openViewDialog = async (template: MessageTemplateDto) => {
+        const json = await getJson(template.id);
+        if (json !== null) {
+            setViewJson(json);
             setSelectedTemplate(template);
             setViewDialogOpen(true);
-        } catch (err: any) {
-            setError(err.message || 'Failed to load template JSON');
-            console.error('Error loading template JSON:', err);
         }
     };
 
     const openEditDialog = async (template: MessageTemplateDto) => {
-        if (!loader) return;
-
-        try {
-            const response = await getTemplateJson(loader, template.id);
+        const json = await getJson(template.id);
+        if (json !== null) {
             setSelectedTemplate(template);
             setTemplateName(template.templateName);
-            setJsonPayload(response.json);
+            setJsonPayload(json);
             setEditDialogOpen(true);
-        } catch (err: any) {
-            setError(err.message || 'Failed to load template for editing');
-            console.error('Error loading template:', err);
         }
     };
 
     const openDeleteDialog = (template: MessageTemplateDto) => {
         setSelectedTemplate(template);
         setDeleteDialogOpen(true);
+    };
+
+    const handleCreateDialogOpenChange = (open: boolean) => {
+        if (open) {
+            // Reset form when opening create dialog
+            setTemplateName('');
+            setJsonPayload('');
+        }
+        setCreateDialogOpen(open);
+    };
+
+    const handleEditDialogOpenChange = (open: boolean) => {
+        if (!open) {
+            // Reset form when closing edit dialog
+            setTemplateName('');
+            setJsonPayload('');
+            setSelectedTemplate(null);
+        }
+        setEditDialogOpen(open);
+    };
+
+    const handleViewDialogOpenChange = (open: boolean) => {
+        if (!open) {
+            setViewJson('');
+            setSelectedTemplate(null);
+        }
+        setViewDialogOpen(open);
+    };
+
+    const handleDeleteDialogOpenChange = (open: boolean) => {
+        if (!open) {
+            setSelectedTemplate(null);
+        }
+        setDeleteDialogOpen(open);
     };
 
     if (loading) {
@@ -206,172 +157,52 @@ export const MessageTemplatesPage: React.FC<MessageTemplatesPageProps> = ({ load
                     <h1>Message Templates</h1>
                     <Text>Manage Teams adaptive card message templates</Text>
                 </div>
-                <Dialog open={createDialogOpen} onOpenChange={(_, data) => setCreateDialogOpen(data.open)}>
-                    <DialogTrigger disableButtonEnhancement>
-                        <Button appearance="primary" icon={<Add20Regular />}>
-                            New Template
-                        </Button>
-                    </DialogTrigger>
-                    <DialogSurface>
-                        <DialogBody>
-                            <DialogTitle>Create New Template</DialogTitle>
-                            <DialogContent>
-                                <div className={styles.formField}>
-                                    <Label htmlFor="templateName">Template Name</Label>
-                                    <Input
-                                        id="templateName"
-                                        value={templateName}
-                                        onChange={(_, data) => setTemplateName(data.value)}
-                                    />
-                                </div>
-                                <div className={styles.formField}>
-                                    <Label htmlFor="jsonPayload">JSON Payload</Label>
-                                    <Textarea
-                                        id="jsonPayload"
-                                        className={styles.jsonTextarea}
-                                        value={jsonPayload}
-                                        onChange={(_, data) => setJsonPayload(data.value)}
-                                    />
-                                </div>
-                            </DialogContent>
-                            <DialogActions>
-                                <DialogTrigger disableButtonEnhancement>
-                                    <Button appearance="secondary">Cancel</Button>
-                                </DialogTrigger>
-                                <Button appearance="primary" onClick={handleCreate}>Create</Button>
-                            </DialogActions>
-                        </DialogBody>
-                    </DialogSurface>
-                </Dialog>
+                <TemplateFormDialog
+                    mode="create"
+                    open={createDialogOpen}
+                    onOpenChange={handleCreateDialogOpenChange}
+                    templateName={templateName}
+                    onTemplateNameChange={setTemplateName}
+                    jsonPayload={jsonPayload}
+                    onJsonPayloadChange={setJsonPayload}
+                    onSubmit={onCreateSubmit}
+                    triggerButton={true}
+                />
             </div>
 
             {error && <div className={styles.error}>{error}</div>}
 
-            <Card className={styles.card}>
-                <CardHeader header={<Text weight="semibold">Templates</Text>} />
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHeaderCell>Name</TableHeaderCell>
-                            <TableHeaderCell>Created By</TableHeaderCell>
-                            <TableHeaderCell>Created Date</TableHeaderCell>
-                            <TableHeaderCell>Actions</TableHeaderCell>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {templates.map((template) => (
-                            <TableRow key={template.id}>
-                                <TableCell>
-                                    <TableCellLayout>{template.templateName}</TableCellLayout>
-                                </TableCell>
-                                <TableCell>
-                                    <TableCellLayout>{template.createdByUpn}</TableCellLayout>
-                                </TableCell>
-                                <TableCell>
-                                    <TableCellLayout>
-                                        {new Date(template.createdDate).toLocaleDateString()}
-                                    </TableCellLayout>
-                                </TableCell>
-                                <TableCell>
-                                    <TableCellLayout>
-                                        <div className={styles.actionButtons}>
-                                            <Button
-                                                size="small"
-                                                icon={<Eye20Regular />}
-                                                onClick={() => handleView(template)}
-                                            />
-                                            <Button
-                                                size="small"
-                                                icon={<Edit20Regular />}
-                                                onClick={() => openEditDialog(template)}
-                                            />
-                                            <Button
-                                                size="small"
-                                                icon={<Delete20Regular />}
-                                                onClick={() => openDeleteDialog(template)}
-                                            />
-                                        </div>
-                                    </TableCellLayout>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </Card>
+            <TemplateTable
+                templates={templates}
+                onView={openViewDialog}
+                onEdit={openEditDialog}
+                onDelete={openDeleteDialog}
+            />
 
-            {/* Edit Dialog */}
-            <Dialog open={editDialogOpen} onOpenChange={(_, data) => setEditDialogOpen(data.open)}>
-                <DialogSurface>
-                    <DialogBody>
-                        <DialogTitle>Edit Template</DialogTitle>
-                        <DialogContent>
-                            <div className={styles.formField}>
-                                <Label htmlFor="editTemplateName">Template Name</Label>
-                                <Input
-                                    id="editTemplateName"
-                                    value={templateName}
-                                    onChange={(_, data) => setTemplateName(data.value)}
-                                />
-                            </div>
-                            <div className={styles.formField}>
-                                <Label htmlFor="editJsonPayload">JSON Payload</Label>
-                                <Textarea
-                                    id="editJsonPayload"
-                                    className={styles.jsonTextarea}
-                                    value={jsonPayload}
-                                    onChange={(_, data) => setJsonPayload(data.value)}
-                                />
-                            </div>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button appearance="secondary" onClick={() => setEditDialogOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button appearance="primary" onClick={handleEdit}>Save</Button>
-                        </DialogActions>
-                    </DialogBody>
-                </DialogSurface>
-            </Dialog>
+            <TemplateFormDialog
+                mode="edit"
+                open={editDialogOpen}
+                onOpenChange={handleEditDialogOpenChange}
+                templateName={templateName}
+                onTemplateNameChange={setTemplateName}
+                jsonPayload={jsonPayload}
+                onJsonPayloadChange={setJsonPayload}
+                onSubmit={onEditSubmit}
+            />
 
-            {/* View Dialog */}
-            <Dialog open={viewDialogOpen} onOpenChange={(_, data) => setViewDialogOpen(data.open)}>
-                <DialogSurface>
-                    <DialogBody>
-                        <DialogTitle>{selectedTemplate?.templateName}</DialogTitle>
-                        <DialogContent>
-                            <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-                                {viewJson}
-                            </pre>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button appearance="secondary" onClick={() => setViewDialogOpen(false)}>
-                                Close
-                            </Button>
-                        </DialogActions>
-                    </DialogBody>
-                </DialogSurface>
-            </Dialog>
+            <TemplateViewDialog
+                open={viewDialogOpen}
+                onOpenChange={handleViewDialogOpenChange}
+                templateName={selectedTemplate?.templateName ?? ''}
+                json={viewJson}
+            />
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={(_, data) => setDeleteDialogOpen(data.open)}>
-                <DialogSurface>
-                    <DialogBody>
-                        <DialogTitle>Confirm Delete</DialogTitle>
-                        <DialogContent>
-                            <Text>
-                                Are you sure you want to delete the template "{selectedTemplate?.templateName}"?
-                                This action cannot be undone.
-                            </Text>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button appearance="secondary" onClick={() => setDeleteDialogOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button appearance="primary" onClick={handleDelete}>Delete</Button>
-                        </DialogActions>
-                    </DialogBody>
-                </DialogSurface>
-            </Dialog>
+            <TemplateDeleteDialog
+                open={deleteDialogOpen}
+                onOpenChange={handleDeleteDialogOpenChange}
+                templateName={selectedTemplate?.templateName ?? ''}
+                onConfirm={onDeleteConfirm}
+            />
         </div>
     );
 };
