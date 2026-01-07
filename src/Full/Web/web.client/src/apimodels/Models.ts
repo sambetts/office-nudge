@@ -47,7 +47,8 @@ export interface UpdateTemplateRequest {
 export interface CreateBatchAndSendRequest {
   batchName: string;
   templateId: string;
-  recipientUpns: string[];
+  recipientUpns?: string[];
+  smartGroupIds?: string[];
 }
 
 export interface UpdateLogStatusRequest {
@@ -77,6 +78,77 @@ export interface QueueStatusDto {
   success: boolean;
   queueLength: number;
   timestamp: string;
+}
+
+// Smart Group Models (Copilot Connected Mode)
+
+export interface CopilotConnectedStatusDto {
+  isEnabled: boolean;
+  hasAIFoundryConfig: boolean;
+}
+
+export interface SmartGroupDto {
+  id: string;
+  name: string;
+  description: string;
+  createdByUpn: string;
+  createdDate: string;
+  lastResolvedDate?: string;
+  lastResolvedMemberCount?: number;
+}
+
+export interface SmartGroupMemberDto {
+  userPrincipalName: string;
+  displayName?: string;
+  department?: string;
+  jobTitle?: string;
+  confidenceScore?: number;
+}
+
+export interface SmartGroupResolutionResult {
+  smartGroupId: string;
+  smartGroupName: string;
+  members: SmartGroupMemberDto[];
+  resolvedAt: string;
+  fromCache: boolean;
+}
+
+export interface CreateSmartGroupRequest {
+  name: string;
+  description: string;
+}
+
+export interface UpdateSmartGroupRequest {
+  name: string;
+  description: string;
+}
+
+export interface PreviewSmartGroupRequest {
+  description: string;
+  maxUsers?: number;
+}
+
+export interface PreviewSmartGroupResponse {
+  members: SmartGroupMemberDto[];
+  count: number;
+}
+
+export interface SmartGroupUpnsResponse {
+  upns: string[];
+  count: number;
+}
+
+// Application Settings Models
+
+export interface AppSettingsDto {
+  followUpChatSystemPrompt: string | null;
+  defaultFollowUpChatSystemPrompt: string;
+  lastModifiedDate: string | null;
+  lastModifiedByUpn: string | null;
+}
+
+export interface UpdateSettingsRequest {
+  followUpChatSystemPrompt: string | null;
 }
 
 

@@ -1,4 +1,4 @@
-import { ServiceConfiguration, MessageTemplateDto, MessageLogDto, CreateTemplateRequest, UpdateTemplateRequest, MessageBatchDto, CreateBatchAndSendRequest, UpdateLogStatusRequest, ParseFileResponse, MessageStatusStatsDto, UserCoverageStatsDto, QueueStatusDto } from "../apimodels/Models";
+import { ServiceConfiguration, MessageTemplateDto, MessageLogDto, CreateTemplateRequest, UpdateTemplateRequest, MessageBatchDto, CreateBatchAndSendRequest, UpdateLogStatusRequest, ParseFileResponse, MessageStatusStatsDto, UserCoverageStatsDto, QueueStatusDto, CopilotConnectedStatusDto, SmartGroupDto, SmartGroupResolutionResult, CreateSmartGroupRequest, UpdateSmartGroupRequest, PreviewSmartGroupRequest, PreviewSmartGroupResponse, SmartGroupUpnsResponse, AppSettingsDto, UpdateSettingsRequest } from "../apimodels/Models";
 import { BaseAxiosApiLoader } from "./AxiosApiLoader";
 
 
@@ -83,5 +83,55 @@ export const getUserCoverageStats = async (loader: BaseAxiosApiLoader): Promise<
 // Diagnostics API calls
 export const getQueueStatus = async (loader: BaseAxiosApiLoader): Promise<QueueStatusDto> => {
   return loader.loadFromApi('api/Diagnostics/QueueStatus', 'GET');
+}
+
+// Smart Group API calls (Copilot Connected Mode)
+export const getCopilotConnectedStatus = async (loader: BaseAxiosApiLoader): Promise<CopilotConnectedStatusDto> => {
+  return loader.loadFromApi('api/SmartGroup/CopilotConnectedStatus', 'GET');
+}
+
+export const getAllSmartGroups = async (loader: BaseAxiosApiLoader): Promise<SmartGroupDto[]> => {
+  return loader.loadFromApi('api/SmartGroup/GetAll', 'GET');
+}
+
+export const getSmartGroup = async (loader: BaseAxiosApiLoader, id: string): Promise<SmartGroupDto> => {
+  return loader.loadFromApi(`api/SmartGroup/Get/${id}`, 'GET');
+}
+
+export const createSmartGroup = async (loader: BaseAxiosApiLoader, request: CreateSmartGroupRequest): Promise<SmartGroupDto> => {
+  return loader.loadFromApi('api/SmartGroup/Create', 'POST', request);
+}
+
+export const updateSmartGroup = async (loader: BaseAxiosApiLoader, id: string, request: UpdateSmartGroupRequest): Promise<SmartGroupDto> => {
+  return loader.loadFromApi(`api/SmartGroup/Update/${id}`, 'PUT', request);
+}
+
+export const deleteSmartGroup = async (loader: BaseAxiosApiLoader, id: string): Promise<void> => {
+  return loader.loadFromApi(`api/SmartGroup/Delete/${id}`, 'DELETE');
+}
+
+export const resolveSmartGroupMembers = async (loader: BaseAxiosApiLoader, id: string, forceRefresh: boolean = false): Promise<SmartGroupResolutionResult> => {
+  return loader.loadFromApi(`api/SmartGroup/ResolveMembers/${id}?forceRefresh=${forceRefresh}`, 'POST');
+}
+
+export const previewSmartGroup = async (loader: BaseAxiosApiLoader, request: PreviewSmartGroupRequest): Promise<PreviewSmartGroupResponse> => {
+  return loader.loadFromApi('api/SmartGroup/Preview', 'POST', request);
+}
+
+export const getSmartGroupUpns = async (loader: BaseAxiosApiLoader, id: string): Promise<SmartGroupUpnsResponse> => {
+  return loader.loadFromApi(`api/SmartGroup/GetUpns/${id}`, 'GET');
+}
+
+// Settings API calls
+export const getSettings = async (loader: BaseAxiosApiLoader): Promise<AppSettingsDto> => {
+  return loader.loadFromApi('api/Settings/Get', 'GET');
+}
+
+export const updateSettings = async (loader: BaseAxiosApiLoader, request: UpdateSettingsRequest): Promise<AppSettingsDto> => {
+  return loader.loadFromApi('api/Settings/Update', 'PUT', request);
+}
+
+export const resetSettingsToDefaults = async (loader: BaseAxiosApiLoader): Promise<AppSettingsDto> => {
+  return loader.loadFromApi('api/Settings/ResetToDefaults', 'POST');
 }
 

@@ -11,11 +11,16 @@ namespace Web.Server.Controllers;
 public class SendNudgeController : ControllerBase
 {
     private readonly MessageTemplateService _templateService;
+    private readonly SmartGroupService _smartGroupService;
     private readonly ILogger<SendNudgeController> _logger;
 
-    public SendNudgeController(MessageTemplateService templateService, ILogger<SendNudgeController> logger)
+    public SendNudgeController(
+        MessageTemplateService templateService,
+        SmartGroupService smartGroupService,
+        ILogger<SendNudgeController> logger)
     {
         _templateService = templateService;
+        _smartGroupService = smartGroupService;
         _logger = logger;
     }
 
@@ -75,9 +80,13 @@ public class SendNudgeController : ControllerBase
             return BadRequest("TemplateId is required");
         }
 
-        if (request.RecipientUpns == null || !request.RecipientUpns.Any())
+        // Must have either recipient UPNs or smart group IDs
+        var hasRecipientUpns = request.RecipientUpns != null && request.RecipientUpns.Any();
+        var hasSmartGroups = request.SmartGroupIds != null && request.SmartGroupIds.Any();
+
+        if (!hasRecipientUpns && !hasSmartGroups)
         {
-            return BadRequest("At least one recipient UPN is required");
+            return BadRequest("At least one recipient UPN or smart group is required");
         }
 
         try
@@ -92,19 +101,59 @@ public class SendNudgeController : ControllerBase
                 return NotFound($"Template {request.TemplateId} not found");
             }
 
+            // Collect all recipient UPNs
+            var allRecipientUpns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Add directly specified UPNs
+            if (hasRecipientUpns)
+            {
+                foreach (var upn in request.RecipientUpns!)
+                {
+                    allRecipientUpns.Add(upn);
+                }
+            }
+
+            // Resolve smart groups and add their members
+            if (hasSmartGroups)
+            {
+                foreach (var smartGroupId in request.SmartGroupIds!)
+                {
+                    try
+                    {
+                        var smartGroupUpns = await _smartGroupService.GetSmartGroupUpns(smartGroupId);
+                        foreach (var upn in smartGroupUpns)
+                        {
+                            allRecipientUpns.Add(upn);
+                        }
+                        _logger.LogInformation($"Resolved smart group {smartGroupId} to {smartGroupUpns.Count} UPNs");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, $"Failed to resolve smart group {smartGroupId}");
+                        // Continue with other smart groups
+                    }
+                }
+            }
+
+            if (allRecipientUpns.Count == 0)
+            {
+                return BadRequest("No valid recipients found after resolving smart groups");
+            }
+
             // Create batch
             var batch = await _templateService.CreateBatch(request.BatchName, request.TemplateId, senderUpn);
 
             // Create message log entries for each recipient
-            var logs = await _templateService.LogBatchMessages(batch.Id, request.RecipientUpns);
+            var logs = await _templateService.LogBatchMessages(batch.Id, allRecipientUpns.ToList());
 
-            _logger.LogInformation($"Created batch {batch.Id} with {logs.Count} messages");
+            _logger.LogInformation($"Created batch {batch.Id} with {logs.Count} messages (from {request.RecipientUpns?.Count ?? 0} direct UPNs and {request.SmartGroupIds?.Count ?? 0} smart groups)");
 
             return Ok(new
             {
                 batch,
                 messageCount = logs.Count,
-                logs
+                logs,
+                smartGroupsResolved = request.SmartGroupIds?.Count ?? 0
             });
         }
         catch (Exception ex)
@@ -141,7 +190,16 @@ public class CreateBatchAndSendRequest
 {
     public string BatchName { get; set; } = null!;
     public string TemplateId { get; set; } = null!;
-    public List<string> RecipientUpns { get; set; } = null!;
+    
+    /// <summary>
+    /// Direct list of recipient UPNs
+    /// </summary>
+    public List<string>? RecipientUpns { get; set; }
+    
+    /// <summary>
+    /// Smart group IDs to resolve and include as recipients (requires Copilot Connected mode)
+    /// </summary>
+    public List<string>? SmartGroupIds { get; set; }
 }
 
 public class UpdateLogStatusRequest

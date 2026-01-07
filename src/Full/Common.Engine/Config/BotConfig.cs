@@ -20,6 +20,18 @@ public class TeamsAppConfig : AppConfig
 
     [ConfigValue(true)]
     public string? AppCatalogTeamAppId { get; set; } = null!;
+
+    /// <summary>
+    /// Optional AI Foundry configuration for Copilot Connected mode.
+    /// When configured, enables smart groups and AI-powered follow-up conversations.
+    /// </summary>
+    [ConfigSection(Optional = true)]
+    public AIFoundryConfig? AIFoundryConfig { get; set; } = null;
+
+    /// <summary>
+    /// Returns true if Copilot Connected mode is enabled (AI Foundry is configured).
+    /// </summary>
+    public bool IsCopilotConnectedEnabled => AIFoundryConfig != null;
 }
 
 /// <summary>

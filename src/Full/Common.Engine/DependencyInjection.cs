@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddGraphServices(config);
         services.AddMessageTemplateServices(config);
         services.AddStatisticsServices(config);
+        services.AddSmartGroupServices(config);
 
         return config;
     }
@@ -53,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddGraphServices(config);
         services.AddMessageTemplateServices(config);
         services.AddStatisticsServices(config);
+        services.AddSmartGroupServices(config);
 
         return config;
     }
@@ -69,6 +71,57 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<StatisticsService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers smart group services for Copilot Connected mode.
+    /// Only fully functional when AIFoundryConfig is provided.
+    /// </summary>
+    private static IServiceCollection AddSmartGroupServices(this IServiceCollection services, TeamsAppConfig config)
+    {
+        // Register GraphUserService for enriched user metadata
+        services.AddSingleton<GraphUserService>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GraphUserService>>();
+            return new GraphUserService(config.GraphConfig, logger);
+        });
+
+        // Register SmartGroupStorageManager
+        services.AddSingleton<SmartGroupStorageManager>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SmartGroupStorageManager>>();
+            return new SmartGroupStorageManager(config.ConnectionStrings.Storage, logger);
+        });
+
+        // Register SettingsStorageManager
+        services.AddSingleton<SettingsStorageManager>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SettingsStorageManager>>();
+            return new SettingsStorageManager(config.ConnectionStrings.Storage, logger);
+        });
+
+        // Register AIFoundryService only if configured
+        if (config.AIFoundryConfig != null)
+        {
+            services.AddSingleton<AIFoundryService>(sp =>
+            {
+                var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<AIFoundryService>>();
+                var settingsManager = sp.GetRequiredService<SettingsStorageManager>();
+                return new AIFoundryService(config.AIFoundryConfig, logger, settingsManager);
+            });
+        }
+
+        // Register SmartGroupService
+        services.AddScoped<SmartGroupService>(sp =>
+        {
+            var storageManager = sp.GetRequiredService<SmartGroupStorageManager>();
+            var graphUserService = sp.GetRequiredService<GraphUserService>();
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SmartGroupService>>();
+            var aiFoundryService = sp.GetService<AIFoundryService>(); // Optional - may be null
+            return new SmartGroupService(storageManager, graphUserService, logger, aiFoundryService);
+        });
 
         return services;
     }

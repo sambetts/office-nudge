@@ -17,6 +17,8 @@ export function NavMenu() {
       setSelectedValue('sendnudge');
     } else if (path === '/batchhistory') {
       setSelectedValue('batchhistory');
+    } else if (path === '/settings') {
+      setSelectedValue('settings');
     }
   }, [history.location.pathname]);
 
@@ -30,6 +32,8 @@ export function NavMenu() {
       history.push('/sendnudge');
     } else if (data.value === "batchhistory") {
       history.push('/batchhistory');
+    } else if (data.value === "settings") {
+      history.push('/settings');
     }
   };
 
@@ -47,6 +51,9 @@ export function NavMenu() {
         </Tab>
         <Tab id="BatchHistory" value="batchhistory">
           Batch History
+        </Tab>
+        <Tab id="Settings" value="settings">
+          Settings
         </Tab>
       </TabList>
     </div>
