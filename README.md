@@ -59,38 +59,94 @@ The storage account needs both:
 
 **Note**: This solution uses only Azure Storage (tables + blobs) for all data persistence. No SQL database, Entity Framework, or other database infrastructure is required, making it extremely lightweight and cost-effective.
 
+## Teams Bot Setup
+
+This section covers creating a Teams bot, configuring the required Microsoft Graph permissions, and setting up the bot messaging endpoint.
+
+### 1. Create a Bot in Teams Developer Portal
+
+1. Navigate to the [Teams Developer Portal](https://dev.teams.microsoft.com/)
+2. Sign in with your Microsoft 365 account
+3. Go to **Tools** ? **Bot management** in the left navigation
+4. Click **+ New Bot**
+5. Enter a name for your bot (e.g., "Office Nudge Bot")
+6. Click **Add**
+7. Once created, note down the **Bot ID** - this is your `MicrosoftAppId`
+8. Click on your newly created bot to open its settings
+9. Under **Client secrets**, click **Add a client secret**
+10. Copy and securely store the generated secret - this is your `MicrosoftAppPassword`
+
+> ?? **Important**: The client secret is only shown once. Store it securely immediately.
+
+### 2. Configure Graph Permissions for the Bot's Entra ID App
+
+When you create a bot in the Teams Developer Portal, an Entra ID (Azure AD) app registration is automatically created. You need to add the required Microsoft Graph permissions to this app.
+
+1. Go to the [Azure Portal](https://portal.azure.com/)
+2. Navigate to **Microsoft Entra ID** ? **App registrations**
+3. Search for your bot by name or Bot ID (the app will have the same name as your bot)
+4. Click on the app registration to open it
+5. Go to **API permissions** in the left menu
+6. Click **+ Add a permission**
+7. Select **Microsoft Graph** ? **Application permissions**
+8. Add the following permissions:
+   - `User.Read.All` - Required for reading user information and statistics
+   - `TeamsActivity.Send` - Required for sending activity feed notifications
+   - `TeamsAppInstallation.ReadWriteForUser.All` - Required for the bot to install itself to user conversations and send messages
+
+9. After adding all permissions, click **Grant admin consent for [Your Tenant]**
+10. Confirm by clicking **Yes**
+
+> ?? **Note**: All Application permissions require admin consent. Without granting admin consent, the bot will not be able to send messages or access user information.
+
+#### Verifying Permissions
+
+After granting consent, your API permissions should show a green checkmark next to each permission indicating "Granted for [Your Tenant]".
+
+| Permission | Type | Description |
+|------------|------|-------------|
+| `User.Read.All` | Application | Read all users' full profiles |
+| `TeamsActivity.Send` | Application | Send activity feed notifications |
+| `TeamsAppInstallation.ReadWriteForUser.All` | Application | Manage Teams app installations for users |
+
+### 3. Configure Bot Messaging Endpoint (After Deployment)
+
+Once your application is deployed to Azure App Service, you need to configure the bot's messaging endpoint so Teams knows where to send messages.
+
+1. Deploy your application to Azure App Service (see [Deployment](#deployment) section)
+2. Note your App Service URL (e.g., `https://your-app-name.azurewebsites.net`)
+3. Go back to the [Teams Developer Portal](https://dev.teams.microsoft.com/)
+4. Navigate to **Tools** ? **Bot management**
+5. Click on your bot to open its settings
+6. Under **Configure** ? **Endpoint address**, enter:
+   ```
+   https://your-app-name.azurewebsites.net/api/messages
+   ```
+7. Click **Save**
+
+> ?? **Tip**: The messaging endpoint must be HTTPS and publicly accessible. Azure App Service provides this by default.
+
+#### Testing the Bot Connection
+
+After configuring the endpoint:
+1. Open Microsoft Teams
+2. Search for your bot by name in the search bar
+3. Start a conversation with the bot
+4. The bot should respond, confirming the connection is working
+
+If the bot doesn't respond:
+- Verify the endpoint URL is correct
+- Check that the App Service is running
+- Review Application Insights logs for errors
+- Ensure `MicrosoftAppId` and `MicrosoftAppPassword` are correctly configured in your App Service settings
+
 ## Configuration
 
-### 1. Azure AD App Registration
+This section covers configuring the application for local development and production. Before proceeding, ensure you have completed the [Teams Bot Setup](#teams-bot-setup) section to create your bot and configure the required permissions.
 
-Create an Azure AD app registration with the following settings:
+> :memo: **Note**: When you create a bot in the Teams Developer Portal, an Entra ID (Azure AD) app registration is automatically created. This same app registration is used for both the bot identity and Microsoft Graph API access. You will use the Bot ID as your `MicrosoftAppId` / `GraphConfig:ClientId` and the bot client secret as your `MicrosoftAppPassword` / `GraphConfig:ClientSecret`.
 
-**API Permissions:**
-- Microsoft Graph:
-  - `User.Read` (Delegated) - For user authentication
-  - `User.ReadBasic.All` (Delegated) - For reading basic user information
-  - `User.Read.All` (Application) - **Required for reading user information and statistics**
-  - `TeamsActivity.Send` (Application) - **Required for bot messaging**
-  - `TeamsAppInstallation.ReadWriteForUser.All` (Application) - **Required for bot to install itself to user conversations and send messages**
-
-**Important Notes:**
-- All **Application** permissions require **admin consent**
-- After adding these permissions in Azure Portal:
-  1. Go to **API permissions** in your app registration
-  2. Click **Grant admin consent for [Your Tenant]**
-  3. Confirm by clicking **Yes**
-- Without admin consent, the application will not be able to access Microsoft Graph APIs
-
-**Authentication:**
-- Platform: Web
-- Redirect URI: `https://your-domain.com/auth/callback` (and `http://localhost:5173/auth/callback` for development)
-- Platform: Single-page application (SPA)
-- Redirect URI: `https://your-domain.com` (and `http://localhost:5173` for development)
-
-**Certificates & Secrets:**
-- Create a client secret (note it down immediately)
-
-### 2. Backend Configuration (User Secrets)
+### 1. Backend Configuration (User Secrets)
 
 **?? Important**: For local development, use **User Secrets** to store sensitive configuration. Never commit secrets to source control.
 
