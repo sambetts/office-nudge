@@ -11,6 +11,7 @@ import { MessageTemplatesPage } from './pages/MessageTemplates/MessageTemplatesP
 import { SendNudgePage } from './pages/SendNudge/SendNudgePage';
 import { BatchProgressPage } from './pages/BatchProgress/BatchProgressPage';
 import { BatchHistoryPage } from './pages/BatchHistory/BatchHistoryPage';
+import { SettingsPage } from './pages/Settings/SettingsPage';
 
 export const AppRoutes: React.FC<PropsWithChildren<AppRoutesProps>> = (props) => {
 
@@ -27,6 +28,7 @@ export const AppRoutes: React.FC<PropsWithChildren<AppRoutesProps>> = (props) =>
                         <Route exact path='/sendnudge' render={() => <SendNudgePage loader={props.apiLoader} />} />
                         <Route exact path='/batchhistory' render={() => <BatchHistoryPage loader={props.apiLoader} />} />
                         <Route exact path='/batch/:batchId' render={() => <BatchProgressPage loader={props.apiLoader} />} />
+                        <Route exact path='/settings' render={() => <SettingsPage loader={props.apiLoader} />} />
                     </Layout>
                 )
                 :
