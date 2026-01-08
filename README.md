@@ -1,17 +1,55 @@
-# Teams Adaptive Card Management Application
+# Office Nudge Bot
 
-A Microsoft Teams bot application that enables administrators to create, manage, and publish adaptive cards to groups of users. This solution provides a web-based management interface for creating adaptive card templates and a Teams bot for delivering those cards to users.
+**Drive Microsoft 365 Copilot adoption with targeted, in-context tips delivered directly in Microsoft Teams.**
+
+Office Nudge is a Teams bot that sends beautifully designed adaptive cards with Copilot tips, prompt examples, and best practices to help your users get the most out of Microsoft 365 Copilot and Copilot Chat. Perfect for IT teams and adoption specialists looking to accelerate Copilot ROI.
+
+![Office Nudge Bot Demo](docs/images/office-nudge-bot-demo.png)
+
+## What is Office Nudge?
+
+Office Nudge is a Microsoft Teams bot designed to **accelerate Microsoft 365 Copilot adoption** across your organization. It delivers timely, contextual tips and prompts directly to users in Teams, helping them discover and master Copilot capabilities in Outlook, Word, Excel, PowerPoint, and Teams itself.
+
+Instead of relying on lengthy training sessions or emails that go unread, Office Nudge meets users where they work-right in Microsoft Teams-with bite-sized, actionable guidance that drives real behavior change.
+
+### Key Use Cases
+
+#### Copilot Adoption (Primary Focus)
+
+- **Copilot Chat Tips** - Teach users how to get the most from Microsoft 365 Copilot Chat with ready-to-use prompts and best practices
+- **App-Specific Copilot Guidance** - Share contextual tips for using Copilot in Outlook, Word, Excel, PowerPoint, and Teams
+- **Prompt Engineering** - Help users craft better prompts with examples like "Be specific", "Set the tone", and "Ask for options"
+- **Copilot Discovery** - Introduce new Copilot features and capabilities as they're released
+- **Adoption Campaigns** - Run structured campaigns to drive Copilot usage with progressive tips over time
+
+#### Additional Scenarios
+
+- **Employee Onboarding** - Deliver welcome messages and Copilot getting-started resources to new team members
+- **Training Reinforcement** - Send follow-up nudges after Copilot training sessions to reinforce learning
+- **Feature Announcements** - Notify users about new Microsoft 365 features and how Copilot can help
+- **Feedback Collection** - Gather user feedback on Copilot adoption through interactive cards
+
+### Why Use Office Nudge?
+
+| Traditional Email | Office Nudge Bot |
+|------------------|------------------|
+| Often ignored or filtered | Appears directly in Teams chat |
+| Static content | Interactive adaptive cards |
+| No engagement tracking | Full delivery and interaction logging |
+| One-size-fits-all | Targeted to specific users or groups |
+| Manual sending | Scheduled and automated delivery |
 
 ## Features
 
-- ?? **Template Management**: Create and edit adaptive card templates with JSON payloads
-- ?? **Azure Storage Only**: Lightweight solution using Azure Table Storage for metadata and Blob Storage for JSON payloads (no SQL database required)
-- ?? **Teams Bot Integration**: Deliver adaptive cards directly to users via Teams bot conversations
-- ?? **Message Logging**: Track message delivery status and recipients
-- ?? **Authentication**: Supports both Teams SSO and MSAL authentication
-- ?? **Modern UI**: React-based web interface with Fluent UI components
-- ?? **Scalable Storage**: Blob storage handles large JSON payloads (no 64KB table storage limit)
-- ? **No Database Required**: Pure Azure Storage solution for minimal infrastructure overhead
+- **Template Management** - Create and edit adaptive card templates with JSON payloads
+- **Azure Storage Only** - Lightweight solution using Azure Table Storage for metadata and Blob Storage for JSON payloads (no SQL database required)
+- **Teams Bot Integration** - Deliver adaptive cards directly to users via Teams bot conversations
+- **Message Logging** - Track message delivery status and recipients
+- **Authentication** - Supports both Teams SSO and MSAL authentication
+- **Modern UI** - React-based web interface with Fluent UI components
+- **Scalable Storage** - Blob storage handles large JSON payloads (no 64KB table storage limit)
+- **No Database Required** - Pure Azure Storage solution for minimal infrastructure overhead
+- **AI-Powered Conversations** - Optional Azure AI Foundry integration for intelligent bot responses
 
 
 
@@ -35,29 +73,24 @@ A Microsoft Teams bot application that enables administrators to create, manage,
 
 ## Prerequisites
 
+For development, you will need:
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 18+](https://nodejs.org/)
 - [Azure Subscription](https://azure.microsoft.com/free/)
-- [Microsoft 365 Developer Tenant](https://developer.microsoft.com/microsoft-365/dev-program) (optional for development)
+- [Microsoft 365 tenant](https://developer.microsoft.com/microsoft-365/dev-program) with Teams
+
+For complete prerequisites and Azure resource requirements, see the [Deployment Guide](DEPLOYMENT.md).
 
 ## Project Structure
 
-The solution is located in the `src/Full` directory. All projects (Web.Server, Common.Engine, Common.DataUtils, and UnitTests) are within this subdirectory.
+The solution is located in the `src/Full` directory:
 
-## Azure Resources Required
-
-1. **Azure Storage Account**: For table storage (metadata) and blob storage (JSON payloads) - **No SQL database needed**
-2. **Azure AD App Registration**: For authentication and bot identity
-3. **Azure Bot Service**: For Teams bot functionality (optional)
-4. **Application Insights**: For telemetry (optional)
-
-### Storage Account Configuration
-
-The storage account needs both:
-- **Table Storage**: Enabled for storing template metadata and message logs
-- **Blob Storage**: Enabled with a container named `message-templates` (automatically created by the application)
-
-**Note**: This solution uses only Azure Storage (tables + blobs) for all data persistence. No SQL database, Entity Framework, or other database infrastructure is required, making it extremely lightweight and cost-effective.
+| Project | Description |
+|---------|-------------|
+| `Web.Server` | ASP.NET Core Web API and Teams bot |
+| `Common.Engine` | Core business logic and services |
+| `Common.DataUtils` | Data access and storage utilities |
+| `UnitTests` | Unit test project |
 
 ## Teams Bot Setup
 

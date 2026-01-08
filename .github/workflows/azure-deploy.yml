@@ -15,7 +15,6 @@ permissions:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  AZURE_WEBAPP_NAME: 'office-nudge-web'
   AZURE_WEBAPP_PACKAGE_PATH: './publish'
   SOLUTION_PATH: 'src/Full/Office Nudge.sln'
   WORKING_DIRECTORY: 'src/Full'
@@ -97,7 +96,7 @@ jobs:
         id: deploy-to-azure
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Azure logout

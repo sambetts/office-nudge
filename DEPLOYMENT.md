@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This document covers all deployment options for the Office Nudge Teams application, including manual deployment, CI/CD pipelines, and infrastructure setup.
+This document covers all deployment options for the Office Nudge Teams application, including prerequisites, Azure resource setup, CI/CD pipelines, and infrastructure configuration.
 
 ## Table of Contents
 
@@ -15,21 +15,106 @@ This document covers all deployment options for the Office Nudge Teams applicati
 
 ## Prerequisites
 
-Before deploying, ensure you have:
+### Development Tools
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 18+](https://nodejs.org/)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (for manual deployment)
-- An [Azure Subscription](https://azure.microsoft.com/free/)
-- Completed the [Teams Bot Setup](README.md#teams-bot-setup) from the main README
+| Tool | Version | Purpose |
+|------|---------|---------|
+| [.NET SDK](https://dotnet.microsoft.com/download/dotnet/10.0) | 10.0+ | Backend development |
+| [Node.js](https://nodejs.org/) | 18+ | Frontend build tools |
+| [npm](https://www.npmjs.com/) | 9+ | Package management |
+| [Git](https://git-scm.com/) | Latest | Version control |
+| [Visual Studio 2022](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/) | Latest | IDE (optional) |
+
+### Azure Tools
+
+| Tool | Purpose |
+|------|---------|
+| [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) | Command-line deployment and management |
+| [Azure Storage Explorer](https://azure.microsoft.com/features/storage-explorer/) | Storage account management (optional) |
+
+### Azure Subscriptions and Tenants
+
+- **Azure Subscription** - For hosting Azure resources
+- **Microsoft 365 Tenant** - With Teams enabled for bot deployment
+- **Admin Consent** - Required for Graph API application permissions
+
+### Accounts and Access
+
+- Azure subscription with Contributor access to create resources
+- Microsoft 365 admin access (or Global Admin) for:
+  - Granting admin consent for Graph API permissions
+  - Publishing the bot to the Teams app catalog (optional)
 
 ## Azure Resources Required
 
-1. **Azure App Service** - Windows or Linux, .NET 10 runtime
-2. **Azure Storage Account** - For Table Storage (metadata) and Blob Storage (JSON payloads)
-3. **Azure AD App Registration** - For authentication and bot identity
-4. **Azure Key Vault** - For secure secret storage (recommended)
-5. **Application Insights** - For telemetry and monitoring (optional)
+### Required Resources
+
+| Resource | SKU/Tier | Purpose |
+|----------|----------|---------|
+| **Azure App Service** | B1 or higher | Host the .NET web application |
+| **App Service Plan** | Basic or higher | Compute for App Service |
+| **Azure Storage Account** | Standard LRS | Table Storage (metadata) + Blob Storage (JSON payloads) |
+| **Azure AD App Registration** | N/A | Authentication and bot identity |
+
+### Optional Resources
+
+| Resource | SKU/Tier | Purpose |
+|----------|----------|---------|
+| **Azure Key Vault** | Standard | Secure secret storage (recommended for production) |
+| **Application Insights** | Basic | Telemetry, logging, and monitoring |
+| **Azure AI Foundry** | Pay-as-you-go | AI-powered bot conversations (Copilot Connected mode) |
+
+### Storage Account Configuration
+
+The storage account requires both Table Storage and Blob Storage:
+
+```
+Storage Account
+??? Table Storage
+?   ??? MessageTemplates (template metadata)
+?   ??? MessageLogs (delivery tracking)
+??? Blob Storage
+    ??? message-templates (container for JSON payloads)
+```
+
+**Note**: The `message-templates` blob container is automatically created by the application on first run.
+
+### Azure AI Foundry Configuration (Optional)
+
+For AI-powered bot conversations, you need an Azure AI Foundry (formerly Azure OpenAI) deployment:
+
+1. **Create an Azure AI Foundry resource** in the Azure Portal
+2. **Deploy a model** (e.g., GPT-4o, GPT-4o-mini)
+3. **Note the following values** for configuration:
+   - Endpoint URL (e.g., `https://your-resource.openai.azure.com/`)
+   - Deployment name
+   - API key
+
+Configure these in your application settings:
+```json
+{
+  "AIFoundryConfig": {
+    "Endpoint": "https://your-resource.openai.azure.com/",
+    "DeploymentName": "gpt-4o-mini",
+    "ApiKey": "your-api-key",
+    "MaxTokens": 2000,
+    "Temperature": "0.7"
+  }
+}
+```
+
+### Estimated Costs
+
+| Resource | Estimated Monthly Cost |
+|----------|----------------------|
+| App Service (B1) | ~$13 USD |
+| Storage Account (minimal usage) | ~$1-5 USD |
+| Application Insights (basic) | Free tier available |
+| Azure AI Foundry | Pay-per-token (varies by usage) |
+
+**Total**: ~$15-25 USD/month for basic deployment (excluding AI Foundry usage)
+
+---
 
 ## Manual Deployment
 
@@ -37,7 +122,7 @@ Before deploying, ensure you have:
 
 1. **Create an Azure App Service** (Windows or Linux, .NET 10)
 
-2. **Configure Application Settings** in Azure Portal (Configuration ? Application Settings):
+2. **Configure Application Settings** in Azure Portal (Configuration - Application Settings):
    - Add all the settings from your user secrets
    - Use Azure Key Vault references for sensitive values (recommended)
 
@@ -55,7 +140,7 @@ Before deploying, ensure you have:
    ```
 
 4. **Or deploy using Visual Studio**:
-   - Right-click on `Web.Server` project ? Publish
+   - Right-click on `Web.Server` project - Publish
    - Follow the wizard to publish to Azure App Service
 
 ### Azure Static Web Apps (Frontend Only)
@@ -99,8 +184,8 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
 2. **Configure Federated Credentials** for OIDC authentication:
 
    In the Azure Portal:
-   - Go to **Microsoft Entra ID** ? **App registrations** ? Your app
-   - Navigate to **Certificates & secrets** ? **Federated credentials**
+   - Go to **Microsoft Entra ID** - **App registrations** - Your app
+   - Navigate to **Certificates & secrets** - **Federated credentials**
    - Click **+ Add credential**
    - Select **GitHub Actions deploying Azure resources**
    - Configure:
@@ -123,9 +208,11 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
      --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
    ```
 
-4. **Configure GitHub Secrets**:
+4. **Configure GitHub Secrets and Variables**:
 
-   In your GitHub repository, go to **Settings** ? **Secrets and variables** ? **Actions** and add:
+   In your GitHub repository, go to **Settings** - **Secrets and variables** - **Actions**.
+
+   **Secrets tab** (for sensitive values):
 
    | Secret Name | Value |
    |------------|-------|
@@ -133,17 +220,15 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
    | `AZURE_TENANT_ID` | Your Azure AD tenant ID |
    | `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID |
 
-5. **Update Workflow Variables**:
+   **Variables tab** (for configuration values):
 
-   Edit `.github/workflows/azure-deploy.yml` and update:
-   ```yaml
-   env:
-     AZURE_WEBAPP_NAME: 'your-app-service-name'  # Replace with your App Service name
-   ```
+   | Variable Name | Value |
+   |--------------|-------|
+   | `AZURE_WEBAPP_NAME` | Your Azure App Service name (e.g., `my-office-nudge-app`) |
 
-6. **Create GitHub Environment**:
+5. **Create GitHub Environment**:
 
-   - Go to **Settings** ? **Environments** ? **New environment**
+   - Go to **Settings** - **Environments** - **New environment**
    - Name it `Production`
    - Optionally add required reviewers for deployment approvals
 
@@ -151,9 +236,9 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
 
 | Trigger | Build | Deploy |
 |---------|-------|--------|
-| Push to `main` | ? | ? |
-| Pull request to `main` | ? | ? |
-| Manual (`workflow_dispatch`) | ? | ? |
+| Push to `main` | Yes | Yes |
+| Pull request to `main` | Yes | No |
+| Manual (`workflow_dispatch`) | Yes | Yes |
 
 ---
 
@@ -163,7 +248,7 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
 
 #### Features
 
-- Multi-stage pipeline (Build ? Deploy)
+- Multi-stage pipeline (Build - Deploy)
 - Builds both .NET backend and React frontend
 - Runs unit tests with automatic result publishing
 - Deploys to Azure Web App using service connection
@@ -174,8 +259,8 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
 
 2. **Create an Azure Service Connection**:
 
-   - Go to **Project Settings** ? **Service connections**
-   - Click **New service connection** ? **Azure Resource Manager**
+   - Go to **Project Settings** - **Service connections**
+   - Click **New service connection** - **Azure Resource Manager**
    - Select **Service principal (automatic)** or **Workload Identity federation (automatic)**
    - Configure:
      - **Scope level**: Subscription or Resource Group
@@ -185,24 +270,26 @@ This project includes pre-configured CI/CD pipelines for both GitHub Actions and
 
 3. **Create a Pipeline**:
 
-   - Go to **Pipelines** ? **New Pipeline**
+   - Go to **Pipelines** - **New Pipeline**
    - Select your repository source (GitHub, Azure Repos, etc.)
    - Choose **Existing Azure Pipelines YAML file**
    - Select `.azure-pipelines/azure-deploy.yml`
    - Click **Run** to save and execute
 
-4. **Update Pipeline Variables**:
+4. **Configure Pipeline Variables**:
 
-   Edit `.azure-pipelines/azure-deploy.yml` and update:
-   ```yaml
-   variables:
-     azureSubscription: 'AzureServiceConnection'  # Must match your service connection name
-     webAppName: 'your-app-service-name'          # Replace with your App Service name
-   ```
+   In Azure DevOps, go to **Pipelines** - Your pipeline - **Edit** - **Variables** and add:
+
+   | Variable Name | Value |
+   |--------------|-------|
+   | `webAppName` | Your Azure App Service name |
+   | `azureSubscription` | Your service connection name (default: `AzureServiceConnection`) |
+
+   Alternatively, you can edit the variables directly in the YAML file.
 
 5. **Create Deployment Environment**:
 
-   - Go to **Pipelines** ? **Environments**
+   - Go to **Pipelines** - **Environments**
    - The `Production` environment will be created automatically on first run
    - Optionally configure approvals and checks
 
@@ -233,10 +320,14 @@ For production deployments, store all secrets in Azure Key Vault.
 2. **Add secrets to Key Vault**:
 
    ```bash
+   # Required secrets
    az keyvault secret set --vault-name my-office-nudge-kv --name GraphClientSecret --value "<your-client-secret>"
    az keyvault secret set --vault-name my-office-nudge-kv --name StorageConnectionString --value "<your-connection-string>"
    az keyvault secret set --vault-name my-office-nudge-kv --name BotAppPassword --value "<your-bot-password>"
+   
+   # Optional secrets
    az keyvault secret set --vault-name my-office-nudge-kv --name ApplicationInsightsConnectionString --value "<your-appinsights-connection-string>"
+   az keyvault secret set --vault-name my-office-nudge-kv --name AIFoundryApiKey --value "<your-ai-foundry-api-key>"
    ```
 
 3. **Enable Managed Identity on your App Service**:
@@ -266,6 +357,7 @@ For production deployments, store all secrets in Azure Key Vault.
    ConnectionStrings__Storage=@Microsoft.KeyVault(SecretUri=https://my-office-nudge-kv.vault.azure.net/secrets/StorageConnectionString/)
    MicrosoftAppPassword=@Microsoft.KeyVault(SecretUri=https://my-office-nudge-kv.vault.azure.net/secrets/BotAppPassword/)
    APPLICATIONINSIGHTS_CONNECTION_STRING=@Microsoft.KeyVault(SecretUri=https://my-office-nudge-kv.vault.azure.net/secrets/ApplicationInsightsConnectionString/)
+   AIFoundryConfig__ApiKey=@Microsoft.KeyVault(SecretUri=https://my-office-nudge-kv.vault.azure.net/secrets/AIFoundryApiKey/)
    ```
 
 ---
@@ -277,9 +369,9 @@ After deploying the application:
 ### 1. Configure Bot Messaging Endpoint
 
 1. Go to the [Teams Developer Portal](https://dev.teams.microsoft.com/)
-2. Navigate to **Tools** ? **Bot management**
+2. Navigate to **Tools** - **Bot management**
 3. Click on your bot
-4. Under **Configure** ? **Endpoint address**, enter:
+4. Under **Configure** - **Endpoint address**, enter:
    ```
    https://your-app-name.azurewebsites.net/api/messages
    ```
