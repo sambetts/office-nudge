@@ -162,22 +162,39 @@ dotnet user-secrets init
 Then add your configuration values:
 
 ```bash
-# Graph API Configuration
+# Graph API Configuration (Required)
 dotnet user-secrets set "GraphConfig:ClientId" "your-app-registration-client-id"
 dotnet user-secrets set "GraphConfig:ClientSecret" "your-app-registration-client-secret"
 dotnet user-secrets set "GraphConfig:TenantId" "your-tenant-id"
+dotnet user-secrets set "GraphConfig:Authority" "https://login.microsoftonline.com/organizations"
 
-# Storage Connection
+# Web Auth Configuration (Required)
+dotnet user-secrets set "WebAuthConfig:ClientId" "your-web-app-registration-client-id"
+dotnet user-secrets set "WebAuthConfig:ClientSecret" "your-web-app-registration-client-secret"
+dotnet user-secrets set "WebAuthConfig:TenantId" "your-tenant-id"
+dotnet user-secrets set "WebAuthConfig:Authority" "https://login.microsoftonline.com/organizations"
+
+# Storage Connection (Required)
 dotnet user-secrets set "ConnectionStrings:Storage" "DefaultEndpointsProtocol=https;AccountName=yourstorageaccount;AccountKey=your-storage-key;EndpointSuffix=core.windows.net"
 
-# Bot Configuration
+# Bot Configuration (Required)
 dotnet user-secrets set "MicrosoftAppId" "your-bot-app-id"
 dotnet user-secrets set "MicrosoftAppPassword" "your-bot-app-password"
 
-# Optional: Application Insights
+# Teams App Catalog ID (Optional)
+dotnet user-secrets set "AppCatalogTeamAppId" "your-teams-app-catalog-id"
+
+# AI Foundry Configuration (Optional - for Copilot Connected mode)
+dotnet user-secrets set "AIFoundryConfig:Endpoint" "https://your-project.openai.azure.com/"
+dotnet user-secrets set "AIFoundryConfig:DeploymentName" "your-deployment-name"
+dotnet user-secrets set "AIFoundryConfig:ApiKey" "your-api-key"
+dotnet user-secrets set "AIFoundryConfig:MaxTokens" "2000"
+dotnet user-secrets set "AIFoundryConfig:Temperature" "0.7"
+
+# Application Insights (Optional)
 dotnet user-secrets set "APPLICATIONINSIGHTS_CONNECTION_STRING" "InstrumentationKey=your-key;IngestionEndpoint=https://..."
 
-# Development Settings
+# Development Settings (Optional)
 dotnet user-secrets set "DevMode" "true"
 dotnet user-secrets set "TestUPN" "your-test-user@yourtenant.onmicrosoft.com"
 ```
@@ -191,24 +208,73 @@ Your secrets will follow this structure (stored securely outside your project di
   "GraphConfig": {
     "ClientId": "your-app-registration-client-id",
     "ClientSecret": "your-app-registration-client-secret",
-    "TenantId": "your-tenant-id"
+    "TenantId": "your-tenant-id",
+    "Authority": "https://login.microsoftonline.com/organizations",
+    "ApiAudience": "optional-api-audience"
   },
   "WebAuthConfig": {
-    "ClientId": "your-app-registration-client-id",
-    "ClientSecret": "your-app-registration-client-secret",
+    "ClientId": "your-web-app-registration-client-id",
+    "ClientSecret": "your-web-app-registration-client-secret",
     "TenantId": "your-tenant-id",
-    "Authority": "https://login.microsoftonline.com/organizations"
+    "Authority": "https://login.microsoftonline.com/organizations",
+    "ApiAudience": "optional-api-audience"
   },
   "ConnectionStrings": {
     "Storage": "UseDevelopmentStorage=true"
   },
   "MicrosoftAppId": "your-bot-app-id",
   "MicrosoftAppPassword": "your-bot-app-password",
-  "DevMode": true
+  "AppCatalogTeamAppId": "your-teams-app-catalog-id",
+  "AIFoundryConfig": {
+    "Endpoint": "https://your-project.openai.azure.com/",
+    "DeploymentName": "your-deployment-name",
+    "ApiKey": "your-api-key",
+    "MaxTokens": 2000,
+    "Temperature": "0.7"
+  },
+  "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=your-key;IngestionEndpoint=https://...",
+  "DevMode": true,
+  "TestUPN": "your-test-user@yourtenant.onmicrosoft.com"
 }
 ```
 
-**Note**: The application uses a simplified configuration structure. Only `GraphConfig`, `ConnectionStrings:Storage`, and bot credentials are required. The `WebAuthConfig` section is not needed as authentication is handled through Microsoft Graph API and Teams bot framework.
+#### Configuration Details
+
+**Required Settings:**
+
+- **GraphConfig**: Azure AD configuration for Microsoft Graph API access
+  - `ClientId`: Your app registration client ID
+  - `ClientSecret`: Your app registration client secret
+  - `TenantId`: Your Azure AD tenant ID
+  - `Authority`: OAuth authority URL (defaults to organizations)
+  - `ApiAudience`: (Optional) API audience for token validation
+
+- **WebAuthConfig**: Azure AD configuration for web interface authentication
+  - Uses same structure as GraphConfig
+  - Required for user authentication to the web portal
+
+- **ConnectionStrings.Storage**: Azure Storage connection string for table and blob storage
+
+- **MicrosoftAppId**: Bot application ID (same as GraphConfig.ClientId)
+
+- **MicrosoftAppPassword**: Bot application secret (same as GraphConfig.ClientSecret)
+
+**Optional Settings:**
+
+- **AppCatalogTeamAppId**: Teams app catalog ID for the bot
+
+- **AIFoundryConfig**: Azure AI Foundry configuration for Copilot Connected mode (enables smart groups and AI-powered conversations)
+  - `Endpoint`: Azure AI Foundry endpoint URL
+  - `DeploymentName`: AI model deployment name
+  - `ApiKey`: API key for authentication
+  - `MaxTokens`: Maximum tokens for AI responses (default: 2000)
+  - `Temperature`: Temperature for AI responses 0.0-1.0 (default: 0.7)
+
+- **APPLICATIONINSIGHTS_CONNECTION_STRING**: Application Insights connection string for telemetry
+
+- **DevMode**: Enable development mode features (default: false)
+
+- **TestUPN**: Test user principal name for development testing
 
 ### 3. Frontend Configuration
 
@@ -389,51 +455,30 @@ Navigate to the message logs section to view:
 
 ## Deployment
 
-### Azure App Service
+For complete deployment instructions, see the **[Deployment Guide](DEPLOYMENT.md)**.
 
-1. **Create an Azure App Service** (Windows or Linux, .NET 10)
-2. **Configure Application Settings** in Azure Portal (Configuration ? Application Settings):
-   - Add all the settings from the user secrets structure above
-   - Use Azure Key Vault references for sensitive values (recommended)
-3. **Deploy using Azure CLI**:
+### Quick Start
 
+**Manual Deployment:**
 ```bash
-# Build and publish
+cd src/Full
 dotnet publish Web/Web.Server/Web.Server.csproj -c Release -o ./publish
-
-# Deploy to Azure App Service (replace with your app name)
 az webapp deploy --resource-group myResourceGroup --name myAppName --src-path ./publish
 ```
 
-Or deploy using Visual Studio:
-- Right-click on `Web.Server` project ? Publish
+**CI/CD Pipelines:**
+This project includes pre-configured pipelines for automated deployment:
 
-### Azure Static Web Apps (Frontend Only)
+| Platform | File | Features |
+|----------|------|----------|
+| GitHub Actions | `.github/workflows/azure-deploy.yml` | Build, test, deploy with OIDC auth |
+| Azure DevOps | `.azure-pipelines/azure-deploy.yml` | Multi-stage pipeline with service connection |
 
-If separating frontend and backend:
-
-```bash
-cd Web/web.client
-npm run build
-# Deploy the dist folder to Azure Static Web Apps
-```
-
-### Using Azure Key Vault (Recommended for Production)
-
-1. Create an Azure Key Vault
-2. Add secrets to Key Vault:
-   - `GraphClientSecret`
-   - `StorageConnectionString`
-   - `BotAppPassword`
-   - `ApplicationInsightsConnectionString`
-3. Enable Managed Identity on your App Service
-4. Grant the managed identity access to Key Vault (Access Policies or RBAC)
-5. Reference secrets in Application Settings:
-   ```
-   GraphConfig__ClientSecret=@Microsoft.KeyVault(SecretUri=https://your-keyvault.vault.azure.net/secrets/GraphClientSecret/)
-   ConnectionStrings__Storage=@Microsoft.KeyVault(SecretUri=https://your-keyvault.vault.azure.net/secrets/StorageConnectionString/)
-   MicrosoftAppPassword=@Microsoft.KeyVault(SecretUri=https://your-keyvault.vault.azure.net/secrets/BotAppPassword/)
-   ```
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed setup instructions including:
+- Azure Key Vault integration
+- Federated credentials setup (GitHub Actions)
+- Service connection configuration (Azure DevOps)
+- Post-deployment verification steps
 
 ## Security Considerations
 
