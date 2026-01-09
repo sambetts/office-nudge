@@ -1,5 +1,7 @@
 using Azure.Identity;
 using Common.Engine.Config;
+using Common.Engine.Models;
+using Common.Engine.Services.UserCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
@@ -7,70 +9,15 @@ using Microsoft.Graph.Models;
 namespace Common.Engine.Services;
 
 /// <summary>
-/// Extended user information with metadata for AI-driven user matching
-/// </summary>
-public class EnrichedUserInfo
-{
-    public string Id { get; set; } = null!;
-    public string UserPrincipalName { get; set; } = null!;
-    public string? DisplayName { get; set; }
-    public string? GivenName { get; set; }
-    public string? Surname { get; set; }
-    public string? Mail { get; set; }
-    public string? Department { get; set; }
-    public string? JobTitle { get; set; }
-    public string? OfficeLocation { get; set; }
-    public string? City { get; set; }
-    public string? Country { get; set; }
-    public string? State { get; set; }
-    public string? CompanyName { get; set; }
-    public string? ManagerUpn { get; set; }
-    public string? ManagerDisplayName { get; set; }
-    public string? EmployeeType { get; set; }
-    public DateTimeOffset? HireDate { get; set; }
-
-    /// <summary>
-    /// Creates a summary string for AI processing
-    /// </summary>
-    public string ToAISummary()
-    {
-        var parts = new List<string>
-        {
-            $"UPN: {UserPrincipalName}",
-            $"Name: {DisplayName ?? "Unknown"}"
-        };
-
-        if (!string.IsNullOrEmpty(JobTitle))
-            parts.Add($"Job Title: {JobTitle}");
-        if (!string.IsNullOrEmpty(Department))
-            parts.Add($"Department: {Department}");
-        if (!string.IsNullOrEmpty(OfficeLocation))
-            parts.Add($"Office: {OfficeLocation}");
-        if (!string.IsNullOrEmpty(City))
-            parts.Add($"City: {City}");
-        if (!string.IsNullOrEmpty(State))
-            parts.Add($"State: {State}");
-        if (!string.IsNullOrEmpty(Country))
-            parts.Add($"Country: {Country}");
-        if (!string.IsNullOrEmpty(CompanyName))
-            parts.Add($"Company: {CompanyName}");
-        if (!string.IsNullOrEmpty(ManagerDisplayName))
-            parts.Add($"Manager: {ManagerDisplayName}");
-        if (!string.IsNullOrEmpty(EmployeeType))
-            parts.Add($"Employee Type: {EmployeeType}");
-
-        return string.Join(" | ", parts);
-    }
-}
-
-/// <summary>
 /// Service for loading users from Microsoft Graph with extended metadata.
 /// Used for AI-driven smart group resolution.
+/// Requires a cache manager implementation for efficient data retrieval.
 /// </summary>
 public class GraphUserService
 {
     private readonly GraphServiceClient _graphClient;
     private readonly ILogger<GraphUserService> _logger;
+    private readonly GraphUserCacheManagerBase _cacheManager;
 
     // Properties to request for enriched user data
     private static readonly string[] UserSelectProperties =
@@ -92,9 +39,16 @@ public class GraphUserService
         "employeeHireDate"
     ];
 
-    public GraphUserService(AzureADAuthConfig config, ILogger<GraphUserService> logger)
+    /// <summary>
+    /// Constructor with cache manager for optimized user data retrieval.
+    /// </summary>
+    public GraphUserService(
+        AzureADAuthConfig config,
+        ILogger<GraphUserService> logger,
+        GraphUserCacheManagerBase cacheManager)
     {
         _logger = logger;
+        _cacheManager = cacheManager;
 
         var clientSecretCredential = new ClientSecretCredential(
             config.TenantId,
@@ -107,10 +61,38 @@ public class GraphUserService
 
     /// <summary>
     /// Get all users from the tenant with extended metadata.
-    /// Note: For large tenants, consider implementing paging and filtering.
+    /// Uses cache manager for optimized retrieval.
     /// </summary>
     /// <param name="maxUsers">Maximum number of users to retrieve (default 999)</param>
-    public async Task<List<EnrichedUserInfo>> GetAllUsersWithMetadataAsync(int maxUsers = 999)
+    /// <param name="forceRefresh">Force a refresh from Graph API instead of using cache</param>
+    public async Task<List<EnrichedUserInfo>> GetAllUsersWithMetadataAsync(int maxUsers = 999, bool forceRefresh = false)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching users from cache...");
+            var cachedUsers = await _cacheManager.GetAllCachedUsersAsync(forceRefresh);
+            
+            if (maxUsers < int.MaxValue)
+            {
+                cachedUsers = cachedUsers.Take(maxUsers).ToList();
+            }
+            
+            _logger.LogInformation($"Retrieved {cachedUsers.Count} users from cache");
+            return cachedUsers;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving from cache");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get all users directly from Graph API (bypasses cache).
+    /// Use this sparingly as it's less efficient than cached retrieval.
+    /// </summary>
+    /// <param name="maxUsers">Maximum number of users to retrieve (default 999)</param>
+    public async Task<List<EnrichedUserInfo>> GetAllUsersDirectFromGraphAsync(int maxUsers = 999)
     {
         var users = new List<EnrichedUserInfo>();
 
@@ -162,7 +144,7 @@ public class GraphUserService
     }
 
     /// <summary>
-    /// Get users filtered by department
+    /// Get users filtered by department.
     /// </summary>
     public async Task<List<EnrichedUserInfo>> GetUsersByDepartmentAsync(string department)
     {
@@ -197,9 +179,35 @@ public class GraphUserService
     }
 
     /// <summary>
-    /// Get a single user with extended metadata
+    /// Get a single user with extended metadata.
+    /// Uses cache manager for optimized retrieval.
     /// </summary>
     public async Task<EnrichedUserInfo?> GetUserWithMetadataAsync(string upn)
+    {
+        try
+        {
+            var cachedUser = await _cacheManager.GetCachedUserAsync(upn);
+            if (cachedUser != null)
+            {
+                _logger.LogDebug($"Retrieved user {upn} from cache");
+                return cachedUser;
+            }
+            
+            // User not in cache, fetch from Graph API
+            _logger.LogDebug($"User {upn} not in cache, fetching from Graph API");
+            return await GetUserDirectFromGraphAsync(upn);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error retrieving user {upn}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get a single user directly from Graph API (bypasses cache).
+    /// </summary>
+    private async Task<EnrichedUserInfo?> GetUserDirectFromGraphAsync(string upn)
     {
         try
         {
@@ -240,7 +248,7 @@ public class GraphUserService
     }
 
     /// <summary>
-    /// Get managers for batch of users (for enrichment)
+    /// Get managers for batch of users (for enrichment).
     /// </summary>
     public async Task EnrichUsersWithManagersAsync(List<EnrichedUserInfo> users)
     {

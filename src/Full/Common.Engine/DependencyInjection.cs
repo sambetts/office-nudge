@@ -1,6 +1,7 @@
 ﻿using Common.Engine.Config;
 using Common.Engine.DependencyInjection;
 using Common.Engine.Services;
+using Common.Engine.Services.UserCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -81,11 +82,20 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static IServiceCollection AddSmartGroupServices(this IServiceCollection services, TeamsAppConfig config)
     {
+        // Register GraphUserCacheManager (in-memory for now, can be swapped with Azure Table Storage implementation)
+        services.AddSingleton<GraphUserCacheManagerBase>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<InMemoryUserCacheManager>>();
+            var graphClient = sp.GetRequiredService<Microsoft.Graph.GraphServiceClient>();
+            return new InMemoryUserCacheManager(graphClient, logger);
+        });
+
         // Register GraphUserService for enriched user metadata
         services.AddSingleton<GraphUserService>(sp =>
         {
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GraphUserService>>();
-            return new GraphUserService(config.GraphConfig, logger);
+            var cacheManager = sp.GetRequiredService<GraphUserCacheManagerBase>();
+            return new GraphUserService(config.GraphConfig, logger, cacheManager);
         });
 
         // Register SmartGroupStorageManager

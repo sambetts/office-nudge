@@ -1,8 +1,10 @@
-﻿using Azure;
+using Azure;
 using Common.Engine.Config;
 using Microsoft.Bot.Schema;
 using Microsoft.Graph;
 using System.Collections.Concurrent;
+
+using Common.Engine.Models;
 
 namespace Common.Engine;
 
@@ -118,3 +120,4 @@ public class BotConversationCache : TableStorageManager
         return _userIdConversationCache.ContainsKey(aadId);
     }
 }
+

@@ -2,6 +2,7 @@ using System.ClientModel;
 using System.Text.Json;
 using Azure.AI.OpenAI;
 using Common.Engine.Config;
+using Common.Engine.Models;
 using Microsoft.Extensions.Logging;
 using OpenAI.Chat;
 

@@ -1,4 +1,5 @@
 ﻿using Common.Engine.Config;
+using Common.Engine.Models;
 using Common.Engine.Services;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;

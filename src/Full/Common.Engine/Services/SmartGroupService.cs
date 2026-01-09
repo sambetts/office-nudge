@@ -1,6 +1,8 @@
 using Common.Engine.Storage;
 using Microsoft.Extensions.Logging;
 
+using Common.Engine.Models;
+
 namespace Common.Engine.Services;
 
 /// <summary>
@@ -261,3 +263,4 @@ public class SmartGroupService
         };
     }
 }
+

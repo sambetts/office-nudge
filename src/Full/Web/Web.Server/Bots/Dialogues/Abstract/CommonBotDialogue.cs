@@ -1,6 +1,7 @@
 ﻿using Common.Engine;
 using Common.Engine.Bot.Cards;
 using Common.Engine.Config;
+using Common.Engine.Models;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
