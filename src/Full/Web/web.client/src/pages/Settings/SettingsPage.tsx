@@ -45,7 +45,13 @@ const useStyles = makeStyles({
     textarea: {
         width: '100%',
         minHeight: '300px',
+        maxHeight: 'none !important',
         fontFamily: 'monospace',
+
+        '& textarea': {
+            maxHeight: 'none !important',
+            minHeight: '300px',
+        },
     },
     buttonContainer: {
         display: 'flex',
@@ -73,14 +79,14 @@ const useStyles = makeStyles({
         borderRadius: tokens.borderRadiusSmall,
     },
     copilotBadge: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: tokens.spacingHorizontalXS,
-            marginBottom: tokens.spacingVerticalM,
-        },
-    });
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalXS,
+        marginBottom: tokens.spacingVerticalM,
+    },
+});
 
-    interface SettingsPageProps {
+interface SettingsPageProps {
     loader?: BaseAxiosApiLoader;
 }
 
@@ -261,6 +267,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ loader }) => {
                         onChange={(_, data) => handlePromptChange(data.value)}
                         placeholder="Enter a system prompt..."
                         resize="vertical"
+                        style={{ maxHeight: 'none' }}
                     />
                 </div>
 
@@ -274,24 +281,24 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ loader }) => {
                 )}
 
                 <div className={styles.buttonContainer}>
-                                    <Button
-                                        appearance="primary"
-                                        icon={<Save20Regular />}
-                                        onClick={handleSave}
-                                        disabled={!hasChanges || saving}
-                                    >
-                                        {saving ? 'Saving...' : 'Save Changes'}
-                                    </Button>
-                                    <Button
-                                        appearance="secondary"
-                                        icon={<ArrowReset20Regular />}
-                                        onClick={handleResetToDefaults}
-                                        disabled={saving || isUsingDefault}
-                                    >
-                                        Reset to Default
-                                    </Button>
-                                </div>
-                            </Card>
-                        </div>
-                    );
-                };
+                    <Button
+                        appearance="primary"
+                        icon={<Save20Regular />}
+                        onClick={handleSave}
+                        disabled={!hasChanges || saving}
+                    >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                    <Button
+                        appearance="secondary"
+                        icon={<ArrowReset20Regular />}
+                        onClick={handleResetToDefaults}
+                        disabled={saving || isUsingDefault}
+                    >
+                        Reset to Default
+                    </Button>
+                </div>
+            </Card>
+        </div>
+    );
+};
