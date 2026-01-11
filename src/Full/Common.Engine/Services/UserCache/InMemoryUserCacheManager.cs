@@ -38,7 +38,9 @@ public class InMemoryUserCacheManager : GraphUserCacheManagerBase
         "state",
         "companyName",
         "employeeType",
-        "employeeHireDate"
+        "employeeHireDate",
+        "accountEnabled",
+        "userType"
     ];
 
     public InMemoryUserCacheManager(

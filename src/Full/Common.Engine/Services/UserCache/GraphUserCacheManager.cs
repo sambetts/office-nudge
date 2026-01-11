@@ -39,7 +39,9 @@ public class GraphUserCacheManager : GraphUserCacheManagerBase
         "state",
         "companyName",
         "employeeType",
-        "employeeHireDate"
+        "employeeHireDate",
+        "accountEnabled",
+        "userType"
     ];
 
     public GraphUserCacheManager(
