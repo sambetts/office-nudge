@@ -31,7 +31,9 @@ public class StatisticsService
         {
             var logs = await _storageManager.GetAllMessageLogs();
 
-            var sentCount = logs.Count(l => l.Status.Equals("Sent", StringComparison.OrdinalIgnoreCase));
+            // Count both "Sent" and "Success" as sent messages
+            var sentCount = logs.Count(l => l.Status.Equals("Sent", StringComparison.OrdinalIgnoreCase) || 
+                                            l.Status.Equals("Success", StringComparison.OrdinalIgnoreCase));
             var failedCount = logs.Count(l => l.Status.Equals("Failed", StringComparison.OrdinalIgnoreCase));
             var pendingCount = logs.Count(l => l.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase));
 
