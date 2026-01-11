@@ -17,7 +17,7 @@ public class GraphUserService
 {
     private readonly GraphServiceClient _graphClient;
     private readonly ILogger<GraphUserService> _logger;
-    private readonly GraphUserCacheManagerBase _cacheManager;
+    private readonly IUserCacheManager _cacheManager;
 
     // Properties to request for enriched user data
     private static readonly string[] UserSelectProperties =
@@ -45,7 +45,7 @@ public class GraphUserService
     public GraphUserService(
         AzureADAuthConfig config,
         ILogger<GraphUserService> logger,
-        GraphUserCacheManagerBase cacheManager)
+        IUserCacheManager cacheManager)
     {
         _logger = logger;
         _cacheManager = cacheManager;

@@ -45,7 +45,7 @@ public class UserCacheTableEntity : ITableEntity
     public string? ManagerDisplayName { get; set; }
 
     // Caching metadata
-    public DateTime LastSyncedDate { get; set; }
+    public DateTime LastSyncedDate { get; set; } = DateTime.UtcNow;
     public DateTime? LastCopilotStatsUpdate { get; set; }
 
     // Copilot usage stats (from beta API)

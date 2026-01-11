@@ -24,4 +24,14 @@ public class UserCacheConfig
     /// Period for Copilot stats: D7, D30, D90, D180 (default: D30).
     /// </summary>
     public string CopilotStatsPeriod { get; set; } = "D30";
+
+    /// <summary>
+    /// Table name for user cache storage (default: "usercache").
+    /// </summary>
+    public string UserCacheTableName { get; set; } = "usercache";
+
+    /// <summary>
+    /// Table name for sync metadata storage (default: "usersyncmetadata").
+    /// </summary>
+    public string SyncMetadataTableName { get; set; } = "usersyncmetadata";
 }

@@ -45,6 +45,9 @@ Instead of relying on lengthy training sessions or emails that go unread, Office
 - **Azure Storage Only** - Lightweight solution using Azure Table Storage for metadata and Blob Storage for JSON payloads (no SQL database required)
 - **Teams Bot Integration** - Deliver adaptive cards directly to users via Teams bot conversations
 - **Message Logging** - Track message delivery status and recipients
+- **User Cache with Delta Queries** - Efficient user data caching with incremental synchronization from Microsoft Graph
+- **Copilot Usage Statistics** - Optional tracking of per-user Microsoft 365 Copilot activity across all apps
+- **Smart Groups** - AI-powered dynamic user groups based on natural language descriptions (requires AI Foundry)
 - **Authentication** - Supports both Teams SSO and MSAL authentication
 - **Modern UI** - React-based web interface with Fluent UI components
 - **Scalable Storage** - Blob storage handles large JSON payloads (no 64KB table storage limit)
@@ -124,6 +127,7 @@ When you create a bot in the Teams Developer Portal, an Entra ID (Azure AD) app 
 7. Select **Microsoft Graph** ? **Application permissions**
 8. Add the following permissions:
    - `User.Read.All` - Required for reading user information and statistics
+   - `Reports.Read.All` - Required for Copilot usage statistics (optional, enables Copilot stats features)
    - `TeamsActivity.Send` - Required for sending activity feed notifications
    - `TeamsAppInstallation.ReadWriteForUser.All` - Required for the bot to install itself to user conversations and send messages
 
@@ -132,15 +136,29 @@ When you create a bot in the Teams Developer Portal, an Entra ID (Azure AD) app 
 
 > ?? **Note**: All Application permissions require admin consent. Without granting admin consent, the bot will not be able to send messages or access user information.
 
+> ?? **Copilot Stats Feature**: The `Reports.Read.All` permission is optional but required to use the Copilot usage statistics feature. This allows the bot to retrieve and cache per-user Copilot activity data across Microsoft 365 apps (Teams, Word, Excel, PowerPoint, Outlook, OneNote, and Loop). Without this permission, the bot will function normally but Copilot stats updates will fail.
+
 #### Verifying Permissions
 
 After granting consent, your API permissions should show a green checkmark next to each permission indicating "Granted for [Your Tenant]".
 
-| Permission | Type | Description |
-|------------|------|-------------|
-| `User.Read.All` | Application | Read all users' full profiles |
-| `TeamsActivity.Send` | Application | Send activity feed notifications |
-| `TeamsAppInstallation.ReadWriteForUser.All` | Application | Manage Teams app installations for users |
+| Permission | Type | Required | Description |
+|------------|------|----------|-------------|
+| `User.Read.All` | Application | Yes | Read all users' full profiles |
+| `Reports.Read.All` | Application | No* | Read Copilot usage reports for statistics |
+| `TeamsActivity.Send` | Application | Yes | Send activity feed notifications |
+| `TeamsAppInstallation.ReadWriteForUser.All` | Application | Yes | Manage Teams app installations for users |
+
+\* Required only for Copilot usage statistics features
+
+#### Important: Refresh Token Cache
+
+After adding any new Microsoft Graph permissions:
+
+- **Rebuild and redeploy** your application
+- **Refresh the Microsoft Graph token cache** by signing out and back in via the Teams bot
+
+This ensures the bot receives an updated token with the new permissions.
 
 ### 3. Configure Bot Messaging Endpoint (After Deployment)
 
@@ -546,6 +564,112 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed setup instructions including:
    - Implement proper authorization checks in controllers
    - Use CORS policies to restrict frontend access
    - Keep all NuGet packages and npm dependencies updated
+
+## Copilot Usage Statistics (Optional Feature)
+
+Office Nudge includes an optional feature to track and cache Microsoft 365 Copilot usage statistics for users in your tenant. This feature helps identify active Copilot users and can be used for targeted adoption campaigns.
+
+### Features
+
+The Copilot stats feature provides:
+- **Per-user activity tracking** across all Microsoft 365 Copilot surfaces
+- **Cached statistics** to reduce API calls and improve performance
+- **Activity dates** for each Copilot app:
+  - Microsoft 365 Copilot Chat
+  - Microsoft Teams Copilot
+  - Word Copilot
+  - Excel Copilot
+  - PowerPoint Copilot
+  - Outlook Copilot
+  - OneNote Copilot
+  - Loop Copilot
+
+### Requirements
+
+To enable Copilot usage statistics:
+
+1. **Microsoft Graph Permission**: Your app registration must have the `Reports.Read.All` application permission granted with admin consent
+2. **Copilot Licenses**: Your tenant must have Microsoft 365 Copilot licenses assigned to users
+3. **Active Usage**: The Microsoft Graph reports API only returns data for users with recent Copilot activity
+
+### Configuration
+
+Copilot stats are automatically enabled if the `Reports.Read.All` permission is granted. The feature uses these configurable settings:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `CopilotStatsPeriod` | D30 | Reporting period: D7, D30, D90, or D180 days |
+| `CopilotStatsRefreshInterval` | 24 hours | How often to refresh statistics from Microsoft Graph |
+| `CacheExpiration` | 1 hour | How long user cache remains valid before resync |
+
+### Usage
+
+**Via Settings Page:**
+1. Navigate to the Settings page in the web interface
+2. In the "User Cache Management" section, click "Update Copilot Stats"
+3. The system will fetch the latest Copilot usage data from Microsoft Graph
+4. Statistics are stored in Azure Table Storage with the user cache
+
+**Clearing Stats (Force Refresh):**
+1. Navigate to the Settings page in the web interface
+2. In the "User Cache Management" section, click "Clear Copilot Stats"
+3. This clears the last update timestamp, forcing a fresh data pull on the next update
+4. Useful for testing or when you need to ensure you have the latest data
+
+**Via API:**
+```bash
+# Update Copilot stats
+POST /api/UserCache/UpdateCopilotStats
+
+# Clear stats metadata (force refresh)
+POST /api/UserCache/ClearCopilotStats
+```
+
+**Programmatically:**
+```csharp
+// Update stats
+await userCacheManager.UpdateCopilotStatsAsync();
+
+// Clear stats metadata to force refresh
+var metadata = await userCacheManager.GetSyncMetadataAsync();
+metadata.LastCopilotStatsUpdate = null;
+await userCacheManager.UpdateSyncMetadataAsync(metadata);
+```
+
+### Data Privacy
+
+- Copilot usage statistics only include **activity dates**, not actual content or prompts
+- Data is retrieved from Microsoft's official reporting APIs
+- Statistics are stored in your Azure Storage account under your control
+- The same privacy and compliance policies apply as with other Microsoft 365 usage reports
+
+### Limitations
+
+1. **Tenant Requirements**: Only available for tenants with Microsoft 365 Copilot licenses
+2. **Data Delay**: Microsoft Graph reports typically have a 24-48 hour delay
+3. **Permission Errors**: Without `Reports.Read.All` permission, the feature will log errors but won't impact core functionality
+4. **Regional Availability**: Must be available in your tenant's region (check Microsoft Graph API availability)
+
+### Troubleshooting Copilot Stats
+
+**"Reports.Read.All permission not granted" errors:**
+1. Verify the permission is added in Azure Portal
+2. Ensure admin consent has been granted
+3. Wait 5-10 minutes for permission changes to propagate
+4. Try calling the API again
+
+**No data returned:**
+- Verify your tenant has active Copilot licenses
+- Check that users have actually used Copilot features
+- Remember reports have a 24-48 hour data delay
+- Verify the reporting period (D7, D30, etc.) has usage
+
+**API rate limiting:**
+- The service caches tokens and reuses them for multiple calls
+- Default refresh interval is 24 hours to minimize API calls
+- Consider increasing `CopilotStatsRefreshInterval` if needed
+
+For more details on the user caching implementation, see [docs/USER_CACHING_IMPLEMENTATION.md](docs/USER_CACHING_IMPLEMENTATION.md).
 
 ## Troubleshooting
 

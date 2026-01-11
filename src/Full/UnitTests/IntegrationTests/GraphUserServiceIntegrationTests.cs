@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Azure.Identity;
 using Microsoft.Graph;
+using Common.Engine.Config;
+using UnitTests.Fakes;
 
 namespace UnitTests.IntegrationTests;
 
@@ -16,7 +18,7 @@ namespace UnitTests.IntegrationTests;
 public class GraphUserServiceIntegrationTests : AbstractTest
 {
     private GraphUserService _service = null!;
-    private GraphUserCacheManagerBase _cacheManager = null!;
+    private IUserCacheManager _cacheManager = null!;
 
     [TestInitialize]
     public void Initialize()
@@ -29,10 +31,15 @@ public class GraphUserServiceIntegrationTests : AbstractTest
         var scopes = new[] { "https://graph.microsoft.com/.default" };
         var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
-        _cacheManager = new InMemoryUserCacheManager(
-            graphClient,
-            GetLogger<InMemoryUserCacheManager>()
-        );
+        // Use in-memory cache for testing
+        var cacheConfig = new UserCacheConfig();
+        var copilotStatsLoader = new GraphCopilotStatsLoader(
+            GetLogger<GraphCopilotStatsLoader>(),
+            cacheConfig,
+            _config.GraphConfig);
+        var dataLoader = new GraphUserDataLoader(graphClient, GetLogger<GraphUserDataLoader>(), copilotStatsLoader, cacheConfig);
+        var storage = new InMemoryCacheStorage();
+        _cacheManager = new UserCacheManager(dataLoader, storage, cacheConfig, GetLogger<UserCacheManager>());
 
         _service = new GraphUserService(
             _config.GraphConfig,

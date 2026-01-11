@@ -1,10 +1,12 @@
 using Common.Engine;
+using Common.Engine.Config;
 using Common.Engine.Services;
 using Common.Engine.Services.UserCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Azure.Identity;
 using Microsoft.Graph;
+using UnitTests.Fakes;
 
 namespace UnitTests.IntegrationTests;
 
@@ -14,7 +16,7 @@ public class SmartGroupServiceIntegrationTests : AbstractTest
     private SmartGroupService _service = null!;
     private SmartGroupStorageManager _storageManager = null!;
     private GraphUserService _graphUserService = null!;
-    private GraphUserCacheManagerBase _cacheManager = null!;
+    private IUserCacheManager _cacheManager = null!;
 
     [TestInitialize]
     public async Task Initialize()
@@ -34,10 +36,15 @@ public class SmartGroupServiceIntegrationTests : AbstractTest
         var scopes = new[] { "https://graph.microsoft.com/.default" };
         var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
-        _cacheManager = new InMemoryUserCacheManager(
-            graphClient,
-            GetLogger<InMemoryUserCacheManager>()
-        );
+        // Use in-memory cache for testing
+        var cacheConfig = new UserCacheConfig();
+        var copilotStatsLoader = new GraphCopilotStatsLoader(
+            GetLogger<GraphCopilotStatsLoader>(),
+            cacheConfig,
+            _config.GraphConfig);
+        var dataLoader = new GraphUserDataLoader(graphClient, GetLogger<GraphUserDataLoader>(), copilotStatsLoader, cacheConfig);
+        var storage = new InMemoryCacheStorage();
+        _cacheManager = new UserCacheManager(dataLoader, storage, cacheConfig, GetLogger<UserCacheManager>());
 
         // Initialize Graph service
         _graphUserService = new GraphUserService(

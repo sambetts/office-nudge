@@ -82,19 +82,54 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static IServiceCollection AddSmartGroupServices(this IServiceCollection services, TeamsAppConfig config)
     {
-        // Register GraphUserCacheManager (in-memory for now, can be swapped with Azure Table Storage implementation)
-        services.AddSingleton<GraphUserCacheManagerBase>(sp =>
+        // Register UserCacheConfig
+        services.AddSingleton(sp => new UserCacheConfig
         {
-            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<InMemoryUserCacheManager>>();
-            var graphClient = sp.GetRequiredService<Microsoft.Graph.GraphServiceClient>();
-            return new InMemoryUserCacheManager(graphClient, logger);
+            CacheExpiration = TimeSpan.FromHours(1),
+            CopilotStatsRefreshInterval = TimeSpan.FromHours(24),
+            FullSyncInterval = TimeSpan.FromDays(7)
         });
+
+        // Register user cache adapters for production (Graph API + Azure Table Storage)
+        services.AddSingleton<ICopilotStatsLoader>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GraphCopilotStatsLoader>>();
+            var cacheConfig = sp.GetRequiredService<UserCacheConfig>();
+            return new GraphCopilotStatsLoader(logger, cacheConfig, config.GraphConfig);
+        });
+
+        services.AddSingleton<IUserDataLoader>(sp =>
+        {
+            var graphClient = sp.GetRequiredService<Microsoft.Graph.GraphServiceClient>();
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GraphUserDataLoader>>();
+            var cacheConfig = sp.GetRequiredService<UserCacheConfig>();
+            var copilotStatsLoader = sp.GetRequiredService<ICopilotStatsLoader>();
+            return new GraphUserDataLoader(graphClient, logger, copilotStatsLoader, cacheConfig);
+        });
+
+        services.AddSingleton<ICacheStorage>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<AzureTableCacheStorage>>();
+            var cacheConfig = sp.GetRequiredService<UserCacheConfig>();
+            return new AzureTableCacheStorage(config.ConnectionStrings.Storage, logger, cacheConfig);
+        });
+
+        // Register CopilotStatsService
+        services.AddSingleton<CopilotStatsService>(sp =>
+        {
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CopilotStatsService>>();
+            var statsLoader = sp.GetRequiredService<ICopilotStatsLoader>();
+            return new CopilotStatsService(logger, statsLoader);
+        });
+
+        // Register UserCacheManager
+        services.AddSingleton<IUserCacheManager, UserCacheManager>();
 
         // Register GraphUserService for enriched user metadata
         services.AddSingleton<GraphUserService>(sp =>
         {
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GraphUserService>>();
-            var cacheManager = sp.GetRequiredService<GraphUserCacheManagerBase>();
+            var cacheManager = sp.GetRequiredService<IUserCacheManager>();
             return new GraphUserService(config.GraphConfig, logger, cacheManager);
         });
 

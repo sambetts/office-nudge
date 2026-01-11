@@ -151,6 +151,21 @@ export interface UpdateSettingsRequest {
   followUpChatSystemPrompt: string | null;
 }
 
+// User Cache Models
+
+export interface CopilotStatsUpdateResponse {
+  message: string;
+  success: boolean;
+  lastUpdate?: string;
+  error?: string;
+}
+
+export interface CacheOperationResponse {
+  message: string;
+  success?: boolean;
+  error?: string;
+}
+
 
 
 

@@ -14,7 +14,7 @@ internal class DeltaQueryResult
 /// <summary>
 /// CSV column indices for parsing Copilot usage reports.
 /// </summary>
-internal class CsvColumnIndices
+public class CsvColumnIndices
 {
     public int UpnIndex { get; set; }
     public int LastActivityIndex { get; set; }
@@ -31,7 +31,7 @@ internal class CsvColumnIndices
 /// <summary>
 /// Represents Copilot usage statistics for a single user.
 /// </summary>
-internal class CopilotUsageRecord
+public class CopilotUsageRecord
 {
     public string UserPrincipalName { get; set; } = null!;
     public DateTime? LastActivityDate { get; set; }
@@ -43,4 +43,30 @@ internal class CopilotUsageRecord
     public DateTime? OutlookCopilotLastActivityDate { get; set; }
     public DateTime? OneNoteCopilotLastActivityDate { get; set; }
     public DateTime? LoopCopilotLastActivityDate { get; set; }
+}
+
+/// <summary>
+/// Result of fetching Copilot usage statistics.
+/// </summary>
+public class CopilotStatsResult
+{
+    /// <summary>
+    /// The list of Copilot usage records. Empty if fetch failed.
+    /// </summary>
+    public List<CopilotUsageRecord> Records { get; set; } = new();
+
+    /// <summary>
+    /// Whether the fetch was successful.
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// HTTP status code from the API response, if applicable.
+    /// </summary>
+    public int? StatusCode { get; set; }
+
+    /// <summary>
+    /// Error message if the fetch failed.
+    /// </summary>
+    public string? ErrorMessage { get; set; }
 }

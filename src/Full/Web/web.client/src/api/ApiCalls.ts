@@ -1,4 +1,4 @@
-import { ServiceConfiguration, MessageTemplateDto, MessageLogDto, CreateTemplateRequest, UpdateTemplateRequest, MessageBatchDto, CreateBatchAndSendRequest, UpdateLogStatusRequest, ParseFileResponse, MessageStatusStatsDto, UserCoverageStatsDto, QueueStatusDto, CopilotConnectedStatusDto, SmartGroupDto, SmartGroupResolutionResult, CreateSmartGroupRequest, UpdateSmartGroupRequest, PreviewSmartGroupRequest, PreviewSmartGroupResponse, SmartGroupUpnsResponse, AppSettingsDto, UpdateSettingsRequest } from "../apimodels/Models";
+import { ServiceConfiguration, MessageTemplateDto, MessageLogDto, CreateTemplateRequest, UpdateTemplateRequest, MessageBatchDto, CreateBatchAndSendRequest, UpdateLogStatusRequest, ParseFileResponse, MessageStatusStatsDto, UserCoverageStatsDto, QueueStatusDto, CopilotConnectedStatusDto, SmartGroupDto, SmartGroupResolutionResult, CreateSmartGroupRequest, UpdateSmartGroupRequest, PreviewSmartGroupRequest, PreviewSmartGroupResponse, SmartGroupUpnsResponse, AppSettingsDto, UpdateSettingsRequest, CopilotStatsUpdateResponse, CacheOperationResponse } from "../apimodels/Models";
 import { BaseAxiosApiLoader } from "./AxiosApiLoader";
 
 
@@ -133,5 +133,26 @@ export const updateSettings = async (loader: BaseAxiosApiLoader, request: Update
 
 export const resetSettingsToDefaults = async (loader: BaseAxiosApiLoader): Promise<AppSettingsDto> => {
   return loader.loadFromApi('api/Settings/ResetToDefaults', 'POST');
+}
+
+// User Cache API calls
+export const getCachedUsers = async (loader: BaseAxiosApiLoader): Promise<any[]> => {
+  return loader.loadFromApi('api/UserCache/GetCachedUsers', 'GET');
+}
+
+export const clearUserCache = async (loader: BaseAxiosApiLoader): Promise<CacheOperationResponse> => {
+  return loader.loadFromApi('api/UserCache/Clear', 'POST');
+}
+
+export const syncUserCache = async (loader: BaseAxiosApiLoader): Promise<CacheOperationResponse> => {
+  return loader.loadFromApi('api/UserCache/Sync', 'POST');
+}
+
+export const updateCopilotStats = async (loader: BaseAxiosApiLoader): Promise<CopilotStatsUpdateResponse> => {
+  return loader.loadFromApi('api/UserCache/UpdateCopilotStats', 'POST');
+}
+
+export const clearCopilotStats = async (loader: BaseAxiosApiLoader): Promise<CacheOperationResponse> => {
+  return loader.loadFromApi('api/UserCache/ClearCopilotStats', 'POST');
 }
 
