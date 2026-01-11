@@ -5,14 +5,14 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "\uD83D\uDCAC Copilot Chat tips (Beginner)",
+      "text": "💬 Copilot Chat tips (Beginner)",
       "size": "Large",
       "weight": "Bolder",
       "wrap": true
     },
     {
       "type": "TextBlock",
-      "text": "Turn \"I'm stuck\" into momentum. Start with one small, clear ask - then iterate.",
+      "text": "Turn \"I'm stuck\" into momentum. Start with one small, clear ask in Copilot - then iterate.",
       "isSubtle": true,
       "spacing": "Small",
       "wrap": true
@@ -38,15 +38,15 @@
             },
             {
               "title": "Context",
-              "value": "Paste the relevant snippet, error, or constraints."
+              "value": "Describe the situation or any relevant details."
             },
             {
               "title": "Output format",
-              "value": "Bullets, steps, code, table - be explicit."
+              "value": "Bullets, steps, email draft, summary - be specific."
             },
             {
-              "title": "Quality bar",
-              "value": "Performance, security, accessibility, tone, etc."
+              "title": "Tone",
+              "value": "Professional, friendly, concise, formal, etc."
             }
           ]
         }
@@ -54,7 +54,163 @@
     },
     {
       "type": "TextBlock",
-      "text": "🚀 Try these starter prompts",
+      "text": "🚀 Try these prompts (click to open in Copilot)",
+      "weight": "Bolder",
+      "spacing": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "Container",
+      "spacing": "Small",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "✉️",
+                  "size": "Large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Write better emails",
+                  "weight": "Bolder",
+                  "wrap": true
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Get help crafting professional messages",
+                  "isSubtle": true,
+                  "wrap": true,
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "📝",
+                  "size": "Large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Summarize information",
+                  "weight": "Bolder",
+                  "wrap": true
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Turn long content into key points",
+                  "isSubtle": true,
+                  "wrap": true,
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "📅",
+                  "size": "Large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Plan your day",
+                  "weight": "Bolder",
+                  "wrap": true
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Organize tasks and prioritize work",
+                  "isSubtle": true,
+                  "wrap": true,
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "💡",
+                  "size": "Large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Learn new topics",
+                  "weight": "Bolder",
+                  "wrap": true
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Get clear explanations of work concepts",
+                  "isSubtle": true,
+                  "wrap": true,
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "✅ Quick habits",
       "weight": "Bolder",
       "spacing": "Medium",
       "wrap": true
@@ -63,58 +219,40 @@
       "type": "FactSet",
       "facts": [
         {
-          "title": "Explain",
-          "value": "\"Explain async/await in C# with a tiny example and common gotchas.\""
+          "title": "Compare",
+          "value": "Ask for 2-3 options to choose from."
         },
         {
-          "title": "Debug",
-          "value": "\"Here's the error + stack trace. Suggest likely root causes and next checks.\""
+          "title": "Context",
+          "value": "Mention what you've already tried or considered."
         },
         {
-          "title": "Draft",
-          "value": "\"Write a polite update asking for approval. Keep it under 70 words.\""
-        },
-        {
-          "title": "Summarize",
-          "value": "\"Summarize this thread into: decision, owners, next steps.\""
+          "title": "Iterate",
+          "value": "Say \"make this more concise\" or \"add more detail\"."
         }
       ]
-    },
-    {
-        "type": "TextBlock",
-        "text": "✅ Quick habits",
-        "weight": "Bolder",
-        "spacing": "Medium",
-        "wrap": true
-      },
-      {
-        "type": "FactSet",
-        "facts": [
-          {
-            "title": "Compare",
-            "value": "Ask for 2 options (fast vs. robust)."
-          },
-          {
-            "title": "Context",
-            "value": "Say what you've already tried."
-          },
-          {
-            "title": "Iterate",
-            "value": "\"Improve this - make it safer, simpler, and add tests.\""
-          }
-        ]
-      }
-    ],
+    }
+  ],
   "actions": [
     {
       "type": "Action.OpenUrl",
-      "title": "Prompting basics",
-      "url": "https://support.microsoft.com/en-us/topic/how-to-use-copilot-in-microsoft-365-apps-9b0e4e1a-2c38-4c07-8b66-919a3f2e2a48"
+      "title": "Try: Write a polite email",
+      "url": "https://teams.microsoft.com/l/chat/0/0?message=Help%20me%20write%20a%20professional%20email%20to%20my%20manager%20requesting%20approval%20for%20a%20purchase.%20Keep%20it%20under%2070%20words%20and%20friendly."
     },
     {
       "type": "Action.OpenUrl",
-      "title": "See advanced tips",
-      "url": "https://aka.ms/copilot"
+      "title": "Try: Summarize this content",
+      "url": "https://teams.microsoft.com/l/chat/0/0?message=Summarize%20this%20in%203%20bullet%20points%3A%20%5Bpaste%20your%20content%20here%5D"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Try: Explain a concept",
+      "url": "https://teams.microsoft.com/l/chat/0/0?message=Explain%20what%20a%20stakeholder%20analysis%20is%20and%20why%20it%27s%20useful%20for%20project%20planning.%20Keep%20it%20simple."
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Copilot help",
+      "url": "https://support.microsoft.com/copilot"
     }
   ]
 }
