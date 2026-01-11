@@ -15,7 +15,7 @@
     },
     {
       "type": "TextBlock",
-      "text": "I'm a bot and I do things!",
+      "text": "I'm a bot that gives Copilot tips!",
       "wrap": true
     }
   ],
