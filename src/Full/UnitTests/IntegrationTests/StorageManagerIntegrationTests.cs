@@ -276,7 +276,7 @@ public class StorageManagerIntegrationTests : AbstractTest
         var retrieved = await _smartGroupStorage.GetSmartGroup(created.RowKey);
 
         // Assert
-        Assert.AreEqual(newName, retrieved.Name);
+        Assert.AreEqual(newName, retrieved!.Name);
         Assert.AreEqual(newDescription, retrieved.Description);
 
         // Cleanup
@@ -338,7 +338,7 @@ public class StorageManagerIntegrationTests : AbstractTest
         var retrieved = await _smartGroupStorage.GetSmartGroup(group.RowKey);
 
         // Assert
-        Assert.IsNotNull(retrieved.LastResolvedDate);
+        Assert.IsNotNull(retrieved!.LastResolvedDate);
         Assert.AreEqual(memberCount, retrieved.LastResolvedMemberCount);
         Assert.IsTrue((DateTime.UtcNow - retrieved.LastResolvedDate.Value).TotalMinutes < 1);
 

@@ -244,6 +244,15 @@ public class AzureTableCacheStorage : ICacheStorage
         await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace);
     }
 
+    /// <summary>
+    /// Delete cache tables from Azure Table Storage. Used primarily for test cleanup.
+    /// </summary>
+    public async Task DeleteTablesAsync()
+    {
+        await _storageManager.DeleteTable(_userCacheTableName);
+        await _storageManager.DeleteTable(_syncMetadataTableName);
+    }
+
     private static EnrichedUserInfo MapToEnrichedUser(UserCacheTableEntity entity)
     {
         return new EnrichedUserInfo

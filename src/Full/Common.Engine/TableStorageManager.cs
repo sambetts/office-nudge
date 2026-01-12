@@ -34,4 +34,21 @@ public abstract class TableStorageManager
 
         return tableClient;
     }
+
+    /// <summary>
+    /// Delete a table from Azure Table Storage. Used primarily for test cleanup.
+    /// </summary>
+    /// <param name="tableName">Name of the table to delete</param>
+    public async Task DeleteTable(string tableName)
+    {
+        try
+        {
+            await _tableServiceClient.DeleteTableAsync(tableName);
+            _tableClientCache.TryRemove(tableName, out _);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            // Table doesn't exist, ignore
+        }
+    }
 }

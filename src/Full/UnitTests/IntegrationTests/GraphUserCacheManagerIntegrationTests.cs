@@ -16,9 +16,11 @@ namespace UnitTests.IntegrationTests;
 public class UserCacheManagerIntegrationTests : AbstractTest
 {
     private UserCacheManager? _cacheManager;
+    private AzureTableCacheStorage? _storage;
     private GraphServiceClient? _graphClient;
     private UserCacheConfig? _cacheConfig;
     private string _testTablePrefix = string.Empty;
+    private bool _testPassed = false;
 
     [TestInitialize]
     public void Initialize()
@@ -56,9 +58,9 @@ public class UserCacheManagerIntegrationTests : AbstractTest
                 _cacheConfig,
                 _config.GraphConfig);
             var dataLoader = new GraphUserDataLoader(_graphClient, GetLogger<GraphUserDataLoader>(), copilotStatsLoader, _cacheConfig);
-            var storage = new AzureTableCacheStorage(_config.ConnectionStrings.Storage, GetLogger<AzureTableCacheStorage>(), _cacheConfig);
+            _storage = new AzureTableCacheStorage(_config.ConnectionStrings.Storage, GetLogger<AzureTableCacheStorage>(), _cacheConfig);
             
-            _cacheManager = new UserCacheManager(dataLoader, storage, _cacheConfig, GetLogger<UserCacheManager>());
+            _cacheManager = new UserCacheManager(dataLoader, _storage, _cacheConfig, GetLogger<UserCacheManager>());
         }
         catch (Exception ex)
         {
@@ -70,18 +72,31 @@ public class UserCacheManagerIntegrationTests : AbstractTest
     [TestCleanup]
     public async Task Cleanup()
     {
-        if (_cacheManager != null)
+        if (_cacheManager != null && _storage != null)
         {
             try
             {
-                await _cacheManager.ClearCacheAsync();
-                _logger.LogInformation($"Cleaned up test tables with prefix: {_testTablePrefix}");
+                if (_testPassed)
+                {
+                    // Test passed - delete the temporary tables
+                    await _storage.DeleteTablesAsync();
+                    _logger.LogInformation($"Deleted test tables with prefix: {_testTablePrefix}");
+                }
+                else
+                {
+                    // Test failed - keep tables for debugging but clear data
+                    await _cacheManager.ClearCacheAsync();
+                    _logger.LogWarning($"Test failed - kept tables with prefix: {_testTablePrefix} for debugging");
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning($"Error during cleanup: {ex.Message}");
             }
         }
+        
+        // Reset for next test
+        _testPassed = false;
     }
 
     #region Basic Cache Operations
@@ -113,6 +128,8 @@ public class UserCacheManagerIntegrationTests : AbstractTest
         Assert.IsTrue(initialUsers.Count > 0, "Should have had users before clear");
         Assert.AreEqual(0, usersAfterClear.Count, "Cache should be empty after clear");
         _logger.LogInformation($"Cleared {initialUsers.Count} users from cache");
+        
+        _testPassed = true;
     }
 
     [TestMethod]
@@ -144,6 +161,8 @@ public class UserCacheManagerIntegrationTests : AbstractTest
         Assert.AreEqual(testUser.UserPrincipalName, retrieved.UserPrincipalName);
         Assert.AreEqual(testUser.DisplayName, retrieved.DisplayName);
         _logger.LogInformation($"Successfully retrieved user: {retrieved.UserPrincipalName}");
+        
+        _testPassed = true;
     }
 
     [TestMethod]
@@ -160,6 +179,8 @@ public class UserCacheManagerIntegrationTests : AbstractTest
 
         // Assert
         Assert.IsNull(result);
+        
+        _testPassed = true;
     }
 
     #endregion
@@ -187,6 +208,8 @@ public class UserCacheManagerIntegrationTests : AbstractTest
         var firstUser = users.First();
         Assert.IsFalse(string.IsNullOrEmpty(firstUser.Id));
         Assert.IsFalse(string.IsNullOrEmpty(firstUser.UserPrincipalName));
+        
+        _testPassed = true;
     }
 
     [TestMethod]
@@ -218,6 +241,8 @@ public class UserCacheManagerIntegrationTests : AbstractTest
         _logger.LogInformation($"  Display Name: {user.DisplayName}");
         _logger.LogInformation($"  Department: {user.Department}");
         _logger.LogInformation($"  Job Title: {user.JobTitle}");
+        
+        _testPassed = true;
     }
 
     #endregion
@@ -258,11 +283,14 @@ public class UserCacheManagerIntegrationTests : AbstractTest
             // Assert
             Assert.IsTrue(users.Count > 0, "Custom tables should contain synced users");
             _logger.LogInformation($"Custom table names working: {customConfig.UserCacheTableName}");
+            
+            _testPassed = true;
         }
         finally
         {
-            // Cleanup
-            await customCacheManager.ClearCacheAsync();
+            // Cleanup - always delete custom test tables
+            var customStorage = new AzureTableCacheStorage(_config.ConnectionStrings.Storage, GetLogger<AzureTableCacheStorage>(), customConfig);
+            await customStorage.DeleteTablesAsync();
         }
     }
 
@@ -329,12 +357,16 @@ public class UserCacheManagerIntegrationTests : AbstractTest
             Assert.AreEqual(cache2Users.Count, cache2AfterClear.Count, "Cache 2 should be unaffected");
 
             _logger.LogInformation($"Cache isolation verified - Cache 1: {cache1AfterClear.Count}, Cache 2: {cache2AfterClear.Count}");
+            
+            _testPassed = true;
         }
         finally
         {
-            // Cleanup both caches
-            await cache1.ClearCacheAsync();
-            await cache2.ClearCacheAsync();
+            // Cleanup both caches - always delete isolation test tables
+            var cleanupStorage1 = new AzureTableCacheStorage(_config.ConnectionStrings.Storage, GetLogger<AzureTableCacheStorage>(), cache1Config);
+            var cleanupStorage2 = new AzureTableCacheStorage(_config.ConnectionStrings.Storage, GetLogger<AzureTableCacheStorage>(), cache2Config);
+            await cleanupStorage1.DeleteTablesAsync();
+            await cleanupStorage2.DeleteTablesAsync();
         }
     }
 
@@ -364,6 +396,8 @@ public class UserCacheManagerIntegrationTests : AbstractTest
         Assert.IsTrue(duration.TotalSeconds < 30, $"Query took {duration.TotalSeconds:F2} seconds, expected < 30");
         
         _logger.LogInformation($"Retrieved {users.Count} users in {duration.TotalMilliseconds:F0}ms");
+        
+        _testPassed = true;
     }
 
     #endregion
