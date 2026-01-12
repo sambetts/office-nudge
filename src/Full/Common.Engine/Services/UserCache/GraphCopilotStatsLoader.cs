@@ -78,6 +78,11 @@ public class GraphCopilotStatsLoader : ICopilotStatsLoader
                 _logger.LogWarning(result.ErrorMessage);
             }
         }
+        catch (Azure.Identity.AuthenticationFailedException)
+        {
+            // Re-throw authentication exceptions so callers can handle them appropriately
+            throw;
+        }
         catch (Exception ex)
         {
             result.ErrorMessage = $"Error fetching Copilot usage stats: {ex.Message}";

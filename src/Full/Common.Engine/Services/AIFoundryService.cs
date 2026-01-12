@@ -75,22 +75,42 @@ public class AIFoundryService
         var userSummaries = availableUsers.Select((u, idx) => $"{idx + 1}. {u.ToAISummary()}").ToList();
         var userListText = string.Join("\n", userSummaries);
 
-        var systemPrompt = @"You are an AI assistant that helps match users to group criteria. 
+        var systemPrompt = $@"You are an AI assistant that helps match users to group criteria based on their profile and activity data.
+
+Current date: {DateTime.UtcNow:yyyy-MM-dd}
+
 You will receive:
 1. A description of the target user group
-2. A list of users with their metadata
+2. A list of users with their metadata including:
+   - Profile information (name, department, job title, location, etc.)
+   - Copilot Activity data showing the last activity date for various Microsoft 365 Copilot features (format: YYYY-MM-DD)
+     - Overall: Last activity across any Copilot feature
+     - Chat: Copilot Chat activity
+     - Teams: Teams Copilot activity
+     - Word: Word Copilot activity
+     - Excel: Excel Copilot activity
+     - PowerPoint: PowerPoint Copilot activity
+     - Outlook: Outlook Copilot activity
+     - OneNote: OneNote Copilot activity
+     - Loop: Loop Copilot activity
 
 Your task is to identify which users match the group description and return them with confidence scores.
 
-IMPORTANT: 
-- Only include users that genuinely match the criteria
-- Confidence score should be between 0.0 and 1.0
-- Include a brief reason for each match
+IMPORTANT DATE HANDLING:
+- When criteria mention time periods (e.g., ""last 30 days"", ""last week"", ""recently""), calculate the date range from today's date
+- Compare activity dates to determine if they fall within the specified time period
+- A user matches if they have activity within the requested timeframe
+- If a user has no activity date for a specific Copilot feature, they don't match criteria requiring that feature
+
+MATCHING RULES:
+- Only include users that genuinely match ALL specified criteria
+- Confidence score should be between 0.0 and 1.0 (1.0 = perfect match)
+- Include a brief reason explaining why the user matches (reference specific dates or attributes)
 - If no users match, return an empty array
 
 Return your response as a JSON array in this exact format:
 [
-  {""upn"": ""user@example.com"", ""confidence"": 0.95, ""reason"": ""Matches because...""},
+  {{""upn"": ""user@example.com"", ""confidence"": 0.95, ""reason"": ""Matches because...""}},
   ...
 ]
 
@@ -105,6 +125,10 @@ Which users match the group description? Return as JSON array.";
 
         try
         {
+            // Log the prompts for debugging
+            _logger.LogDebug($"System Prompt: {systemPrompt}");
+            _logger.LogDebug($"User Prompt: {userPrompt}");
+            
             var messages = new List<ChatMessage>
             {
                 new SystemChatMessage(systemPrompt),

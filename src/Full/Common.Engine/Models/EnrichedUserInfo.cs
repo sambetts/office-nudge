@@ -70,6 +70,32 @@ public class EnrichedUserInfo
         if (!string.IsNullOrEmpty(EmployeeType))
             parts.Add($"Employee Type: {EmployeeType}");
 
+        // Add Copilot activity information
+        var copilotActivities = new List<string>();
+        if (CopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"Overall: {CopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (CopilotChatLastActivityDate.HasValue)
+            copilotActivities.Add($"Chat: {CopilotChatLastActivityDate.Value:yyyy-MM-dd}");
+        if (TeamsCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"Teams: {TeamsCopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (WordCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"Word: {WordCopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (ExcelCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"Excel: {ExcelCopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (PowerPointCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"PowerPoint: {PowerPointCopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (OutlookCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"Outlook: {OutlookCopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (OneNoteCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"OneNote: {OneNoteCopilotLastActivityDate.Value:yyyy-MM-dd}");
+        if (LoopCopilotLastActivityDate.HasValue)
+            copilotActivities.Add($"Loop: {LoopCopilotLastActivityDate.Value:yyyy-MM-dd}");
+
+        if (copilotActivities.Count > 0)
+        {
+            parts.Add($"Copilot Activity: [{string.Join(", ", copilotActivities)}]");
+        }
+
         return string.Join(" | ", parts);
     }
 }
