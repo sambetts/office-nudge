@@ -56,7 +56,7 @@ public class GraphUserDataLoader : IUserDataLoader
         var users = new List<EnrichedUserInfo>();
 
         // Initial delta query request
-        var deltaRequest = await _graphClient.Users.Delta.GetAsync(requestConfiguration =>
+        var deltaRequest = await _graphClient.Users.Delta.GetAsDeltaGetResponseAsync(requestConfiguration =>
         {
             requestConfiguration.QueryParameters.Select = UserSelectProperties;
         });
@@ -73,11 +73,7 @@ public class GraphUserDataLoader : IUserDataLoader
         // Handle pagination
         while (!string.IsNullOrEmpty(deltaRequest?.OdataNextLink))
         {
-            var nextPageRequest = new Microsoft.Graph.Users.Delta.DeltaRequestBuilder(
-                deltaRequest.OdataNextLink,
-                _graphClient.RequestAdapter);
-
-            deltaRequest = await nextPageRequest.GetAsync();
+            deltaRequest = await _graphClient.Users.Delta.WithUrl(deltaRequest.OdataNextLink).GetAsDeltaGetResponseAsync();
             if (deltaRequest?.Value != null)
             {
                 foreach (var user in deltaRequest.Value.Where(u => u.AccountEnabled == true && u.UserType == "Member"))
@@ -103,11 +99,7 @@ public class GraphUserDataLoader : IUserDataLoader
         var users = new List<EnrichedUserInfo>();
 
         // Use the delta token to get only changes
-        var request = new Microsoft.Graph.Users.Delta.DeltaRequestBuilder(
-            deltaToken,
-            _graphClient.RequestAdapter);
-
-        var deltaResponse = await request.GetAsync();
+        var deltaResponse = await _graphClient.Users.Delta.WithUrl(deltaToken).GetAsDeltaGetResponseAsync();
 
         // Collect first page of changes
         if (deltaResponse?.Value != null)
@@ -121,11 +113,7 @@ public class GraphUserDataLoader : IUserDataLoader
         // Handle pagination for delta changes
         while (!string.IsNullOrEmpty(deltaResponse?.OdataNextLink))
         {
-            var nextPageRequest = new Microsoft.Graph.Users.Delta.DeltaRequestBuilder(
-                deltaResponse.OdataNextLink,
-                _graphClient.RequestAdapter);
-
-            deltaResponse = await nextPageRequest.GetAsync();
+            deltaResponse = await _graphClient.Users.Delta.WithUrl(deltaResponse.OdataNextLink).GetAsDeltaGetResponseAsync();
             if (deltaResponse?.Value != null)
             {
                 foreach (var user in deltaResponse.Value)
